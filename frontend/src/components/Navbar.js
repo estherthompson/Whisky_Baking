@@ -1,8 +1,20 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Navbar.css';
 
 const Navbar = () => {
+  const navigate = useNavigate();
+
+  const handleUserAccountClick = () => {
+    // Check if user is logged in
+    const user = localStorage.getItem('user');
+    if (user) {
+      navigate('/user-account');
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <nav className="navbar">
       <div className="nav-container">
@@ -21,9 +33,13 @@ const Navbar = () => {
             </Link>
           </li>
           <li className="nav-item">
-            <Link to="/user-account" className="nav-link">
+            <button 
+              onClick={handleUserAccountClick}
+              className="nav-link"
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
               User Account
-            </Link>
+            </button>
           </li>
         </ul>
       </div>
