@@ -1,7 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/UserAccount.css';
-
+import loginImage from '../assets/images/login-image.png';
 const UserAccount = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
@@ -33,9 +33,9 @@ const UserAccount = () => {
         </div>
         <div className="image-container">
           <img 
-            src="/baking-image.jpg" 
-            alt="Baking illustration" 
-            className="baking-image"
+            src={loginImage}
+            alt="Login Image" 
+            className="login-image"
           />
         </div>
       </div>
