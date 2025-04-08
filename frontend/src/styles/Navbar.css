@@ -9,7 +9,7 @@
   justify-content: space-between;
   align-items: center;
   max-width: 1200px;
-  margin: 0 auto;
+  margin: 0;
   padding: 0 20px;
 }
 
@@ -18,6 +18,8 @@
   font-size: 1.5rem;
   font-weight: bold;
   transition: color 0.3s ease;
+  margin-left: 0;
+  padding-left: 0;
 }
 
 .nav-logo:hover {
