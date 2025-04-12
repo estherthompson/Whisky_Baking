@@ -33,12 +33,12 @@
   height: 100%;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: flex-start;
 }
 
 .login-form h2 {
   text-align: center;
-  margin: 0;
+  margin: 0 0 1rem 0;
   color: #333;
 }
 
@@ -154,4 +154,49 @@
 .forgot-password a:hover {
   color: #2c4846;
   text-decoration: underline;
+}
+
+.success-message {
+  width: 100%;
+  margin: 0;
+  order: 1;
+}
+
+.success-content {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  width: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.success-content strong {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  color: #1b5e20;
+}
+
+.success-content p {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.success-content .toggle-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
+}
+
+.success-content .toggle-btn:hover {
+  background-color: #388e3c;
 }
