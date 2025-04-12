@@ -4,15 +4,15 @@ import '../styles/ProfileInformation.css';
 
 const ProfileInformation = ({ user }) => {
   const [profile, setProfile] = useState({
-    userid: '',
-    profile_photo_url: '',
+    profile_photo_url: null,
     bio: '',
     website: '',
     pronouns: ''
   });
   const [isEditing, setIsEditing] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
+  const [error, setError] = useState(null);
+  const [success, setSuccess] = useState(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [showCustomPronouns, setShowCustomPronouns] = useState(false);
 
   const pronounsOptions = [
@@ -27,29 +27,29 @@ const ProfileInformation = ({ user }) => {
   ];
 
   useEffect(() => {
-    fetchProfile();
+    if (user) {
+      fetchProfile();
+    }
   }, [user]);
 
   const fetchProfile = async () => {
     try {
+      setIsLoading(true);
       const response = await axios.get(`http://localhost:5001/api/profile/${user.userid}`);
       if (response.data) {
-        // Ensure all fields have default empty string values
         setProfile({
-          userid: response.data.userid || '',
-          profile_photo_url: response.data.profile_photo_url || '',
-          bio: response.data.bio || '',
-          website: response.data.website || '',
-          pronouns: response.data.pronouns || ''
+          ...response.data,
+          profile_photo_url: response.data.profile_photo_url || null
         });
-        // Check if the current pronouns value is not in the predefined options
         if (response.data.pronouns && !pronounsOptions.some(option => option.value === response.data.pronouns)) {
           setShowCustomPronouns(true);
         }
       }
-    } catch (err) {
-      console.error('Error fetching profile:', err);
+    } catch (error) {
+      console.error('Error fetching profile:', error);
       setError('Failed to load profile information');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -100,28 +100,29 @@ const ProfileInformation = ({ user }) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    const formData = new FormData();
-    formData.append('photo', file);
-
     try {
-      const response = await axios.post('http://localhost:5001/api/profile/upload-photo', formData, {
+      setIsLoading(true);
+      const formData = new FormData();
+      formData.append('photo', file);
+
+      const response = await axios.post('http://localhost:5001/api/profile/photo', formData, {
         headers: {
-          'Content-Type': 'multipart/form-data',
-        },
+          'Content-Type': 'multipart/form-data'
+        }
       });
-      
-      if (response.data.photoUrl) {
+
+      if (response.data && response.data.profile_photo_url) {
         setProfile(prev => ({
           ...prev,
-          profile_photo_url: response.data.photoUrl,
-          updated_at: new Date().toISOString()
+          profile_photo_url: response.data.profile_photo_url
         }));
-        setSuccess('Photo uploaded successfully!');
-        setTimeout(() => setSuccess(''), 3000);
+        setSuccess('Profile photo updated successfully');
       }
-    } catch (err) {
-      setError('Failed to upload photo');
-      console.error('Error uploading photo:', err);
+    } catch (error) {
+      console.error('Error uploading photo:', error);
+      setError('Failed to upload profile photo');
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -130,31 +131,39 @@ const ProfileInformation = ({ user }) => {
       <div className="profile-header">
         <div className="profile-photo-container">
           <div className="greeting-photo-wrapper">
-            <h2 className="greeting">Hello, {user.username || 'there'}!</h2>
-            <img
-              src={profile.profile_photo_url || '/default-profile.png'} 
-              alt="Profile" 
-              className="profile-photo"
-            />
+            <h2 className="greeting">Hello, {user?.username || 'there'}!</h2>
+            {isLoading ? (
+              <div className="profile-photo-loading">Loading...</div>
+            ) : (
+              <>
+                {profile.profile_photo_url ? (
+                  <img
+                    src={profile.profile_photo_url}
+                    alt="Profile"
+                    className="profile-photo"
+                    onError={(e) => {
+                      e.target.onerror = null;
+                      e.target.src = 'https://via.placeholder.com/150';
+                    }}
+                  />
+                ) : (
+                  <div className="profile-photo-placeholder">
+                    <span>No photo</span>
+                  </div>
+                )}
+                <input
+                  type="file"
+                  id="photo-upload"
+                  className="photo-upload-input"
+                  accept="image/*"
+                  onChange={handlePhotoUpload}
+                />
+                <label htmlFor="photo-upload" className="photo-upload-label">
+                  {isLoading ? 'Uploading...' : 'Change Photo'}
+                </label>
+              </>
+            )}
           </div>
-          <input
-            type="file"
-            accept="image/*"
-            onChange={handlePhotoUpload}
-            className="photo-upload-input"
-            id="photo-upload"
-          />
-          <label htmlFor="photo-upload" className="photo-upload-label">
-            Change Photo
-          </label>
-        </div>
-        <div className="profile-actions">
-          <button 
-            onClick={() => setIsEditing(!isEditing)}
-            className="edit-profile-btn"
-          >
-            {isEditing ? 'Cancel' : 'Edit Profile'}
-          </button>
         </div>
       </div>
 
@@ -233,11 +242,30 @@ const ProfileInformation = ({ user }) => {
           )}
         </div>
 
-        {isEditing && (
-          <button type="submit" className="save-profile-btn">
-            Save Changes
-          </button>
-        )}
+        <div className="form-actions">
+          {!isEditing ? (
+            <button 
+              type="button"
+              onClick={() => setIsEditing(true)}
+              className="edit-profile-btn"
+            >
+              Edit Profile
+            </button>
+          ) : (
+            <>
+              <button type="submit" className="save-profile-btn">
+                Save Changes
+              </button>
+              <button 
+                type="button"
+                onClick={() => setIsEditing(false)}
+                className="cancel-btn"
+              >
+                Cancel
+              </button>
+            </>
+          )}
+        </div>
       </form>
     </div>
   );

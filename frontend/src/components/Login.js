@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/Login.css';
 import loginImage from '../assets/images/login-image.png';
+import logo from '../assets/images/Whisky_Baking.png';
 
 const Login = () => {
   const [isLogin, setIsLogin] = useState(true);
@@ -83,7 +84,12 @@ const Login = () => {
       <div className="white-box">
         <div className="login-container">
           <div className="login-form">
-            {!verificationSent && <h2>{isLogin ? 'Login' : 'Sign Up'}</h2>}
+            {!verificationSent && (
+              <>
+                <img src={logo} alt="Whisky Baking Logo" className="login-logo" />
+                <h2>{isLogin ? 'Login' : 'Sign Up'}</h2>
+              </>
+            )}
             {verificationSent && (
               <div className="success-message">
                 <div className="success-content">

@@ -2,6 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import ProfileInformation from './ProfileInformation';
 import '../styles/UserAccount.css';
+import profileIcon from '../assets/icons/profile.svg';
+import recipesIcon from '../assets/icons/recipes.svg';
+import savedIcon from '../assets/icons/saved.svg';
+import settingsIcon from '../assets/icons/settings.svg';
+import activityIcon from '../assets/icons/activity.svg';
 
 const UserAccount = () => {
   const navigate = useNavigate();
@@ -14,6 +19,10 @@ const UserAccount = () => {
     }
   }, [user, navigate]);
 
+  const handleTabClick = (tab) => {
+    setActiveTab(tab);
+  };
+
   const handleLogout = () => {
     localStorage.removeItem('user');
     navigate('/login');
@@ -23,87 +32,75 @@ const UserAccount = () => {
     return null;
   }
 
-  const renderTabContent = () => {
-    switch (activeTab) {
-      case 'profile':
-        return (
-          <div className="tab-content">
-            <ProfileInformation user={user} />
-          </div>
-        );
-      case 'recipes':
-        return (
-          <div className="tab-content">
-            <h2>My Recipes</h2>
-            <p>This is where user's recipes will be displayed.</p>
-          </div>
-        );
-      case 'favorites':
-        return (
-          <div className="tab-content">
-            <h2>Favorite Recipes</h2>
-            <p>This is where favorite recipes will be displayed.</p>
-          </div>
-        );
-      case 'settings':
-        return (
-          <div className="tab-content">
-            <h2>Account Settings</h2>
-            <p>This is where account settings will be displayed.</p>
-          </div>
-        );
-      case 'activity':
-        return (
-          <div className="tab-content">
-            <h2>Activity History</h2>
-            <p>This is where user activity will be displayed.</p>
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="user-account-container">
-      <div className="tabs-container">
-        <div className="tabs">
-          <button 
-            className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
-            onClick={() => setActiveTab('profile')}
-          >
-            Profile
-          </button>
-          <button 
-            className={`tab ${activeTab === 'recipes' ? 'active' : ''}`}
-            onClick={() => setActiveTab('recipes')}
-          >
-            My Recipes
-          </button>
-          <button 
-            className={`tab ${activeTab === 'favorites' ? 'active' : ''}`}
-            onClick={() => setActiveTab('favorites')}
-          >
-            Favorites
-          </button>
-          <button 
-            className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
-            onClick={() => setActiveTab('settings')}
-          >
-            Settings
-          </button>
-          <button 
-            className={`tab ${activeTab === 'activity' ? 'active' : ''}`}
-            onClick={() => setActiveTab('activity')}
-          >
-            Activity
-          </button>
-        </div>
-        <button onClick={handleLogout} className="logout-btn">
-          Logout
+      <div className="tabs">
+        <button
+          className={`tab ${activeTab === 'profile' ? 'active' : ''}`}
+          onClick={() => handleTabClick('profile')}
+        >
+          <img src={profileIcon} alt="Profile" className="icon" />
+          <span className="text">Profile</span>
+        </button>
+        <button
+          className={`tab ${activeTab === 'recipes' ? 'active' : ''}`}
+          onClick={() => handleTabClick('recipes')}
+        >
+          <img src={recipesIcon} alt="Recipes" className="icon" />
+          <span className="text">My Recipes</span>
+        </button>
+        <button
+          className={`tab ${activeTab === 'saved' ? 'active' : ''}`}
+          onClick={() => handleTabClick('saved')}
+        >
+          <img src={savedIcon} alt="Saved" className="icon" />
+          <span className="text">Saved Recipes</span>
+        </button>
+        <button
+          className={`tab ${activeTab === 'activity' ? 'active' : ''}`}
+          onClick={() => handleTabClick('activity')}
+        >
+          <img src={activityIcon} alt="Activity" className="icon" />
+          <span className="text">Activity</span>
+        </button>
+        <button
+          className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
+          onClick={() => handleTabClick('settings')}
+        >
+          <img src={settingsIcon} alt="Settings" className="icon" />
+          <span className="text">Settings</span>
         </button>
       </div>
-      {renderTabContent()}
+
+      <div className="tab-content">
+        {activeTab === 'profile' && <ProfileInformation user={user} />}
+        {activeTab === 'recipes' && (
+          <div className="coming-soon">
+            <h2>My Recipes</h2>
+            <p>Coming soon! This feature will allow you to manage your recipes.</p>
+          </div>
+        )}
+        {activeTab === 'saved' && (
+          <div className="coming-soon">
+            <h2>Saved Recipes</h2>
+            <p>Coming soon! This feature will allow you to save and organize your favorite recipes.</p>
+          </div>
+        )}
+        {activeTab === 'activity' && (
+          <div className="coming-soon">
+            <h2>Activity</h2>
+            <p>Coming soon! This feature will show your recent activity.</p>
+          </div>
+        )}
+        {activeTab === 'settings' && (
+          <div>
+            <h2>Settings</h2>
+            <button className="logout-btn" onClick={handleLogout}>
+              Logout
+            </button>
+          </div>
+        )}
+      </div>
     </div>
   );
 };

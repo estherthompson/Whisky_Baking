@@ -90,71 +90,182 @@
 .user-account-container {
   min-height: 100vh;
   background-color: #f5f5f5;
-  padding: 20px;
+  padding: clamp(1rem, 3vw, 2rem);
+  width: 100vw;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .tabs-container {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-  padding: 0 20px;
+  flex-direction: column;
+  gap: clamp(0.5rem, 2vh, 1rem);
+  margin-bottom: clamp(1rem, 3vh, 2rem);
+  padding: 0 clamp(1rem, 3vw, 2rem);
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .tabs {
   display: flex;
-  gap: 10px;
-  background-color: white;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  gap: 1rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  padding: 0 1rem;
 }
 
 .tab {
-  padding: 10px 20px;
+  padding: 0.75rem 1.5rem;
   border: none;
-  background: none;
-  cursor: pointer;
-  font-weight: 500;
+  background-color: transparent;
   color: #666;
-  border-radius: 4px;
-  transition: all 0.3s ease;
+  cursor: pointer;
+  font-size: clamp(0.9rem, 2vw, 1rem);
+  font-weight: 500;
+  transition: all 0.2s;
+  white-space: nowrap;
+  min-width: fit-content;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.tab .icon {
+  width: 24px;
+  height: 24px;
+  display: block;
+}
+
+.tab .text {
+  display: block;
 }
 
 .tab:hover {
-  background-color: #f0f0f0;
-  color: #333;
+  color: #3f6461;
 }
 
 .tab.active {
-  background-color: #cbe5e2;
-  color: #333;
+  color: #3f6461;
+  border-bottom: 2px solid #3f6461;
 }
 
 .tab-content {
   background-color: white;
-  padding: 20px;
-  border-radius: 8px;
+  padding: clamp(1rem, 3vh, 2rem);
+  border-radius: clamp(0.5rem, 2vw, 1rem);
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  min-height: 400px;
+  min-height: calc(100vh - clamp(200px, 30vh, 300px));
+  width: 100%;
+  box-sizing: border-box;
+  flex: 1;
 }
 
 .tab-content h2 {
-  margin-bottom: 20px;
+  margin-bottom: clamp(1rem, 3vh, 2rem);
   color: #333;
+  font-size: clamp(1.2rem, 3vw, 1.8rem);
 }
 
 .logout-btn {
   background-color: #f44336;
   color: white;
   border: none;
-  padding: 10px 20px;
-  border-radius: 4px;
+  padding: clamp(0.5rem, 1.5vh, 1rem) clamp(1rem, 2.5vw, 1.5rem);
+  border-radius: clamp(0.25rem, 1vw, 0.5rem);
   cursor: pointer;
   font-weight: 500;
   transition: background-color 0.2s;
+  font-size: clamp(0.8rem, 2vw, 1rem);
+  white-space: nowrap;
+  align-self: flex-end;
+  margin-top: clamp(0.5rem, 2vh, 1rem);
 }
 
 .logout-btn:hover {
   background-color: #d32f2f;
+}
+
+@media (max-width: 768px) {
+  .user-account-container {
+    padding: clamp(0.5rem, 2vh, 1rem);
+  }
+
+  .tabs-container {
+    padding: 0 clamp(0.5rem, 2vw, 1rem);
+  }
+
+  .tabs {
+    gap: 0.5rem;
+    padding: 0 0.5rem;
+  }
+
+  .tab {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .user-account-container {
+    padding: 0.5rem;
+  }
+
+  .tabs-container {
+    padding: 0 0.5rem;
+  }
+
+  .tabs {
+    flex-direction: row;
+    align-items: center;
+    gap: 0.5rem;
+    justify-content: space-around;
+    padding: 0.5rem;
+    background-color: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  }
+
+  .tab {
+    flex-direction: column;
+    padding: 0.5rem;
+    min-width: auto;
+    flex: 1;
+    text-align: center;
+  }
+
+  .tab .icon {
+    margin-bottom: 0.25rem;
+  }
+
+  .tab .text {
+    font-size: 0.8rem;
+  }
+
+  .tab-content {
+    padding: 1rem;
+    min-height: calc(100vh - 150px);
+  }
+
+  .logout-btn {
+    width: 100%;
+    margin-top: 1rem;
+  }
+}
+
+.coming-soon {
+  text-align: center;
+  padding: 2rem;
+  color: #666;
+}
+
+.coming-soon h2 {
+  color: #3f6461;
+  margin-bottom: 1rem;
+}
+
+.coming-soon p {
+  font-size: 1.1rem;
+  line-height: 1.5;
 }
