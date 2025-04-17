@@ -3,6 +3,7 @@ import dotenv from 'dotenv';
 import cors from 'cors';
 import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
+import recipeRoutes from './routes/recipeRoutes.js';
 
 dotenv.config();
 
@@ -17,6 +18,7 @@ app.use(express.json());  // Middleware to parse JSON data
 // Routes
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api', recipeRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

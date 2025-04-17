@@ -17,6 +17,17 @@ const Navbar = () => {
     setIsMenuOpen(false);
   };
 
+  const handleUploadRecipeClick = () => {
+    // Check if user is logged in
+    const user = localStorage.getItem('user');
+    if (user) {
+      navigate('/upload-recipe');
+    } else {
+      navigate('/login');
+    }
+    setIsMenuOpen(false);
+  };
+
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
@@ -37,9 +48,13 @@ const Navbar = () => {
             </Link>
           </li>
           <li className="nav-item">
-            <Link to="/upload-recipe" className="nav-link" onClick={() => setIsMenuOpen(false)}>
+            <button 
+              onClick={handleUploadRecipeClick}
+              className="nav-link"
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
               Upload Recipe
-            </Link>
+            </button>
           </li>
           <li className="nav-item">
             <button 
