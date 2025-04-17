@@ -1,43 +1,80 @@
 import supabase from '../config/supabaseClient.js';
 
-export const getIngredients = async (req, res) => {
+export const createRecipe = async (req, res) => {
     try {
-        const { data: ingredients, error } = await supabase
-            .from('ingredient')
-            .select('*')
-            .order('name');
+        const { 
+            name,           
+            instructions,   
+            description,    
+            recipeTime,
+            userId,
+            ingredients = []
+        } = req.body;
 
-        if (error) {
-            console.error('Error fetching ingredients:', error);
-            return res.status(500).json({ 
-                error: 'Failed to fetch ingredients',
-                details: error.message 
+        // Log the received data
+        console.log('Received recipe data:', {
+            name,
+            instructions,
+            description,
+            recipeTime,
+            userId,
+            ingredientsCount: ingredients.length
+        });
+
+        // Convert recipeTime to integer
+        const recipeTimeInt = parseInt(recipeTime, 10);
+        if (isNaN(recipeTimeInt)) {
+            console.log('Invalid recipeTime value:', recipeTime);
+            return res.status(400).json({ 
+                error: 'Recipe time must be a valid number',
+                details: 'The provided recipe time could not be converted to an integer'
             });
         }
 
-        res.status(200).json(ingredients);
-    } catch (error) {
-        console.error('Server error:', error);
-        res.status(500).json({ 
-            error: 'An unexpected error occurred',
-            details: error.message 
-        });
-    }
-};
+        // Validate required fields
+        if (!name || !instructions || !description || !recipeTimeInt) {
+            const missingFields = [];
+            if (!name) missingFields.push('name');
+            if (!instructions) missingFields.push('instructions');
+            if (!description) missingFields.push('description');
+            if (!recipeTimeInt) missingFields.push('recipeTime');
+            
+            console.log('Missing required fields:', missingFields);
+            return res.status(400).json({ 
+                error: 'All fields are required',
+                missingFields: missingFields
+            });
+        }
 
-export const createRecipe = async (req, res) => {
-    try {
-        const { name, description, instructions, recipeTime, ingredients, userId } = req.body;
+        // Get the last recipe ID to generate a new unique ID
+        const { data: lastRecipe, error: lastRecipeError } = await supabase
+            .from('recipe')
+            .select('recipeid')
+            .order('recipeid', { ascending: false })
+            .limit(1)
+            .single();
 
-        // First, insert the recipe
+        if (lastRecipeError && lastRecipeError.code !== 'PGRST116') {
+            console.error('Error fetching last recipe:', lastRecipeError);
+            return res.status(500).json({ 
+                error: 'Failed to generate recipe ID',
+                details: lastRecipeError.message 
+            });
+        }
+
+        const nextRecipeId = lastRecipe ? lastRecipe.recipeid + 1 : 1;
+        console.log('Attempting to insert recipe with ID:', nextRecipeId);
+        
+        // Insert the recipe with the generated ID
         const { data: recipeData, error: recipeError } = await supabase
             .from('recipe')
             .insert([
                 { 
+                    recipeid: nextRecipeId,
                     name,
-                    description,
                     instructions,
-                    recipetime: recipeTime
+                    description,
+                    recipetime: recipeTimeInt
                 }
             ])
             .select()
@@ -51,32 +88,105 @@ export const createRecipe = async (req, res) => {
             });
         }
 
-        // Then, insert the recipe ingredients
-        const recipeIngredients = ingredients.map(ing => ({
-            recipeid: recipeData.recipeid,
-            ingredientid: ing.ingredientId,
-            quantity: ing.quantity
-        }));
-
-        const { error: ingredientsError } = await supabase
-            .from('recipe_ingredient')
-            .insert(recipeIngredients);
-
-        if (ingredientsError) {
-            console.error('Error adding recipe ingredients:', ingredientsError);
-            // If ingredients fail to add, delete the recipe
-            await supabase
-                .from('recipe')
-                .delete()
-                .eq('recipeid', recipeData.recipeid);
-
-            return res.status(400).json({ 
-                error: 'Failed to add recipe ingredients',
-                details: ingredientsError.message 
-            });
+        // Process ingredients and insert recipe_ingredient associations
+        if (ingredients && ingredients.length > 0) {
+            console.log('Processing ingredients:', ingredients.length);
+            
+            const recipeIngredients = [];
+            
+            for (const ing of ingredients) {
+                let ingredientId = ing.ingredientId;
+                
+                // If no ingredient ID provided, check if it exists by name or create it
+                if (!ingredientId) {
+                    // Check if ingredient exists
+                    const { data: existingIng } = await supabase
+                        .from('ingredient')
+                        .select('ingredientid')
+                        .ilike('name', ing.name)
+                        .maybeSingle();
+                    
+                    if (existingIng) {
+                        // Use existing ingredient
+                        ingredientId = existingIng.ingredientid;
+                        console.log(`Using existing ingredient: ${ing.name}, ID: ${ingredientId}`);
+                    } else {
+                        // Get max ingredient ID to generate new ID
+                        const { data: lastIng } = await supabase
+                            .from('ingredient')
+                            .select('ingredientid')
+                            .order('ingredientid', { ascending: false })
+                            .limit(1)
+                            .maybeSingle();
+                            
+                        const nextIngId = lastIng ? lastIng.ingredientid + 1 : 1;
+                        
+                        // Create new ingredient
+                        const { data: newIng, error: newIngError } = await supabase
+                            .from('ingredient')
+                            .insert([
+                                {
+                                    ingredientid: nextIngId,
+                                    name: ing.name,
+                                    category: 'Other' // Default category
+                                }
+                            ])
+                            .select()
+                            .single();
+                            
+                        if (newIngError) {
+                            console.error('Error creating ingredient:', newIngError);
+                            continue; // Skip this ingredient if error
+                        }
+                        
+                        ingredientId = newIng.ingredientid;
+                        console.log(`Created new ingredient: ${ing.name}, ID: ${ingredientId}`);
+                    }
+                }
+                
+                if (ingredientId) {
+                    recipeIngredients.push({
+                        recipeid: nextRecipeId,
+                        ingredientid: ingredientId,
+                        quantity: ing.quantity
+                    });
+                }
+            }
+            
+            // Insert recipe_ingredient relationships if we have any
+            if (recipeIngredients.length > 0) {
+                console.log('Inserting recipe ingredients:', recipeIngredients);
+                const { error: recipeIngError } = await supabase
+                    .from('recipe_ingredient')
+                    .insert(recipeIngredients);
+                    
+                if (recipeIngError) {
+                    console.error('Error adding recipe ingredients:', recipeIngError);
+                    // We won't fail the whole operation if ingredients fail
+                }
+            }
         }
 
-        res.status(201).json(recipeData);
+        // If userId provided, save recipe for the user
+        if (userId) {
+            const { error: savedError } = await supabase
+                .from('saved_recipes')
+                .insert([{
+                    userid: userId,
+                    recipeid: nextRecipeId,
+                    datesaved: new Date().toISOString()
+                }]);
+
+            if (savedError) {
+                console.error('Error saving recipe for user:', savedError);
+                // We don't need to fail the entire operation if this step fails
+            }
+        }
+
+        res.status(201).json({
+            ...recipeData,
+            message: 'Recipe created successfully'
+        });
     } catch (error) {
         console.error('Server error:', error);
         res.status(500).json({ 
@@ -84,4 +194,157 @@ export const createRecipe = async (req, res) => {
             details: error.message 
         });
     }
-}; 
+};
+
+export const savedRecipe = async (req, res) => {
+    try {
+        const { userId, recipeId } = req.body;
+
+        if (!userId || !recipeId) {
+            return res.status(400).json({
+                error: 'User ID and Recipe ID are required'
+            });
+        }
+
+        // Check if recipe is already saved
+        const { data: existingSave, error: checkError } = await supabase
+            .from('saved_recipes')
+            .select('*')
+            .eq('userid', userId)
+            .eq('recipeid', recipeId)
+            .single();
+
+        if (checkError && checkError.code !== 'PGRST116') {
+            console.error('Error checking saved recipe:', checkError);
+            return res.status(400).json({
+                error: 'Failed to check saved recipe status',
+                details: checkError.message
+            });
+        }
+
+        if (existingSave) {
+            return res.status(400).json({
+                error: 'Recipe is already saved by this user'
+            });
+        }
+
+        const { error: savedError } = await supabase
+            .from('saved_recipes')
+            .insert([{
+                userid: userId,
+                recipeid: recipeId,
+                datesaved: new Date().toISOString()
+            }]);
+
+        if (savedError) {
+            console.error('Error saving recipe:', savedError);
+            return res.status(400).json({
+                error: 'Failed to save recipe',
+                details: savedError.message
+            });
+        }
+
+        res.status(201).json({
+            message: 'Recipe saved successfully'
+        });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({
+            error: 'An unexpected error occurred',
+            details: error.message
+        });
+    }
+};
+
+export const getRecipeById = async (req, res) => {
+    try {
+        const { id } = req.params;
+        console.log(`Fetching recipe with ID: ${id}`);
+
+        // Fetch the recipe
+        const { data: recipe, error: recipeError } = await supabase
+            .from('recipe')
+            .select('recipeid, name, instructions, description, recipetime')
+            .eq('recipeid', id)
+            .single();
+
+        if (recipeError) {
+            console.error('Error fetching recipe:', recipeError);
+            return res.status(404).json({ 
+                error: 'Recipe not found',
+                details: recipeError.message 
+            });
+        }
+
+        // Fetch the recipe ingredients
+        const { data: recipeIngredients, error: ingredientsError } = await supabase
+            .from('recipe_ingredient')
+            .select(`
+                recipeid,
+                ingredientid,
+                quantity,
+                ingredient:ingredientid (
+                    ingredientid,
+                    name,
+                    category,
+                    isallergen,
+                    nutritioninfo
+                )
+            `)
+            .eq('recipeid', id);
+
+        if (ingredientsError) {
+            console.error('Error fetching recipe ingredients:', ingredientsError);
+            return res.status(500).json({ 
+                error: 'Failed to fetch recipe ingredients',
+                details: ingredientsError.message 
+            });
+        }
+
+        // Format the ingredients
+        const ingredients = recipeIngredients.map(item => ({
+            ...item.ingredient,
+            quantity: item.quantity
+        }));
+
+        // Return the complete recipe with ingredients
+        res.status(200).json({
+            ...recipe,
+            ingredients
+        });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ 
+            error: 'An unexpected error occurred',
+            details: error.message 
+        });
+    }
+};
+
+export const getAllRecipes = async (req, res) => {
+    try {
+        console.log('Fetching all recipes');
+        
+        // Fetch all recipes
+        const { data: recipes, error: recipesError } = await supabase
+            .from('recipe')
+            .select('recipeid, name, description, recipetime')
+            .order('recipeid', { ascending: false });
+
+        if (recipesError) {
+            console.error('Error fetching recipes:', recipesError);
+            return res.status(500).json({ 
+                error: 'Failed to fetch recipes',
+                details: recipesError.message 
+            });
+        }
+
+        res.status(200).json(recipes);
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({ 
+            error: 'An unexpected error occurred',
+            details: error.message 
+        });
+    }
+};

@@ -10,15 +10,14 @@ const UploadRecipe = () => {
     description: '',
     instructions: [''], // Initialize with one empty step
     recipeTime: '',
-    temperature: '',
-    temperatureUnit: 'C', // Default to Celsius
     ingredients: [{ 
       ingredientId: '', 
       wholeNumber: '', 
       fraction: '', 
       measurement: '', 
       name: '' 
-    }]
+    }],
+    image: null // Add image to formData
   });
   const [ingredientsList, setIngredientsList] = useState([]);
   const [error, setError] = useState('');
@@ -99,8 +98,13 @@ const UploadRecipe = () => {
   }, [navigate]);
 
   const handleChange = (e, index) => {
-    const { name, value } = e.target;
-    if (name === 'wholeNumber') {
+    const { name, value, type, files } = e.target;
+    if (type === 'file') {
+      setFormData({
+        ...formData,
+        image: files[0] // Handle file input
+      });
+    } else if (name === 'wholeNumber') {
       // Allow only numbers and one decimal point
       const numericValue = value.replace(/[^0-9.]/g, '');
       // Ensure only one decimal point
@@ -251,20 +255,34 @@ const UploadRecipe = () => {
 
     try {
       const user = JSON.parse(localStorage.getItem('user'));
-      // Format ingredients with combined quantity before sending
-      const formattedData = {
-        ...formData,
-        ingredients: formData.ingredients.map(ing => ({
-          ingredientId: ing.ingredientId,
-          quantity: `${ing.wholeNumber || ''}${ing.fraction ? ' ' + ing.fraction : ''}${ing.measurement ? ' ' + ing.measurement : ''}`.trim(),
-          name: ing.name
-        }))
+      
+      // Format instructions as a single string with numbered steps
+      const formattedInstructions = formData.instructions
+        .map((instruction, index) => `${index + 1}. ${instruction}`)
+        .join('\n\n');
+      
+      // Convert recipeTime to a number
+      const recipeTimeValue = parseInt(formData.recipeTime, 10);
+      
+      // Format ingredient data
+      const formattedIngredients = formData.ingredients.map(ing => ({
+        ingredientId: ing.ingredientId, 
+        name: ing.name,
+        quantity: `${ing.wholeNumber || ''}${ing.fraction ? ' ' + ing.fraction : ''}${ing.measurement ? ' ' + ing.measurement : ''}`.trim()
+      }));
+      
+      // Format the recipe data
+      const recipeData = {
+        name: formData.name,
+        description: formData.description,
+        instructions: formattedInstructions,
+        recipeTime: recipeTimeValue,
+        userId: user?.UserID,
+        ingredients: formattedIngredients
       };
 
-      const response = await axios.post('http://localhost:5001/api/recipes', {
-        ...formattedData,
-        userId: user.UserID
-      });
+      console.log('Submitting recipe:', recipeData);
+      const response = await axios.post('http://localhost:5001/api/recipes', recipeData);
 
       setSuccess('Recipe uploaded successfully!');
       setFormData({
@@ -272,15 +290,14 @@ const UploadRecipe = () => {
         description: '',
         instructions: [''],
         recipeTime: '',
-        temperature: '',
-        temperatureUnit: 'C',
         ingredients: [{ 
           ingredientId: '', 
           wholeNumber: '', 
           fraction: '', 
           measurement: '', 
           name: '' 
-        }]
+        }],
+        image: null
       });
     } catch (err) {
       console.error('Error uploading recipe:', err);
@@ -322,6 +339,17 @@ const UploadRecipe = () => {
             value={formData.description}
             onChange={handleChange}
             required
+          />
+        </div>
+
+        <div className="form-group">
+          <label htmlFor="image">Recipe Image</label>
+          <input
+            type="file"
+            id="image"
+            name="image"
+            accept="image/*"
+            onChange={handleChange}
           />
         </div>
 
@@ -368,29 +396,18 @@ const UploadRecipe = () => {
         </div>
 
         <div className="cooking-details">
-          <div className="form-group temperature-input">
-            <label htmlFor="temperature">Cooking Temperature</label>
-            <div className="temperature-container">
-              <input
-                type="number"
-                id="temperature"
-                name="temperature"
-                value={formData.temperature}
-                onChange={handleChange}
-                placeholder="e.g., 350"
-                min="0"
-                max="500"
-              />
-              <select
-                name="temperatureUnit"
-                value={formData.temperatureUnit}
-                onChange={handleChange}
-                className="temperature-unit"
-              >
-                <option value="C">°C</option>
-                <option value="F">°F</option>
-              </select>
-            </div>
+          <div className="form-group time-input">
+            <label htmlFor="recipeTime">Cooking Time (minutes)</label>
+            <input
+              type="number"
+              id="recipeTime"
+              name="recipeTime"
+              value={formData.recipeTime}
+              onChange={handleChange}
+              placeholder="e.g., 30"
+              min="1"
+              required
+            />
           </div>
         </div>
 
