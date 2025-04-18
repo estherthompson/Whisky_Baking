@@ -8,20 +8,34 @@ import {
   faClock,
   faUtensils
 } from '@fortawesome/free-solid-svg-icons';
-import bakingBackground from '../assets/images/baking-background.jpg';
+import homeBanner from '../assets/images/home-banner.jpg';
 import { supabase } from '../supabaseClient';
+import RecipeModal from './RecipeModal';
 
 const Home = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [dietaryRestrictions, setDietaryRestrictions] = useState([]);
-  const [filters, setFilters] = useState({
-    dietary: {},
-    prepTime: 'all',
-    rating: 'all'
-  });
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [excludedIngredients, setExcludedIngredients] = useState({
+    'eggs': true,
+    'milk': true,
+    'butter': true,
+    'flour': true,
+    'sugar': true,
+    'baking powder': true,
+    'salt': true,
+    'vanilla extract': true,
+    'chocolate': true,
+    'nuts': true,
+    'fruit': true,
+    'vegetables': true,
+    'cream': true,
+    'yeast': true,
+    'cinnamon': true,
+    'honey': true
+  });
   const filterPanelRef = useRef(null);
 
   useEffect(() => {
@@ -35,36 +49,11 @@ const Home = () => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  useEffect(() => {
-    fetchDietaryRestrictions();
-    fetchRecipes();
-  }, []);
-
-  const fetchDietaryRestrictions = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('dietary_restrictions')
-        .select('*');
-      
-      if (error) throw error;
-      
-      setDietaryRestrictions(data);
-      const dietaryFilters = {};
-      data.forEach(restriction => {
-        dietaryFilters[restriction.id] = false;
-      });
-      setFilters(prev => ({
-        ...prev,
-        dietary: dietaryFilters
-      }));
-    } catch (error) {
-      console.error('Error fetching dietary restrictions:', error);
-    }
-  };
-
-  const handleSearch = () => {
-    fetchRecipes();
-    setShowFilters(false);
+  const handleIngredientToggle = (ingredient) => {
+    setExcludedIngredients(prev => ({
+      ...prev,
+      [ingredient]: !prev[ingredient]
+    }));
   };
 
   const fetchRecipes = async () => {
@@ -72,7 +61,16 @@ const Home = () => {
       setLoading(true);
       let query = supabase
         .from('recipe')
-        .select('*');
+        .select(`
+          *,
+          recipe_ingredient (
+            ingredient (
+              name,
+              ingredientid
+            ),
+            quantity
+          )
+        `);
 
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
@@ -83,10 +81,38 @@ const Home = () => {
         console.error('Supabase query error:', error);
         throw error;
       }
-      
-      console.log('Raw recipe data:', data);
-      console.log('Number of recipes:', data?.length || 0);
-      setRecipes(data || []);
+
+      // Filter out recipes that contain excluded ingredients
+      const uncheckedIngredients = Object.entries(excludedIngredients)
+        .filter(([_, isChecked]) => !isChecked)  // Get unchecked ingredients
+        .map(([ingredient]) => ingredient.toLowerCase());
+
+      // If no ingredients are unchecked, show all recipes
+      const filteredRecipes = uncheckedIngredients.length === 0
+        ? data // Show all recipes if no ingredients are unchecked
+        : data.filter(recipe => {
+            const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
+              ri.ingredient.name.toLowerCase()
+            ) || [];
+            
+            // Filter out recipes that contain any unchecked ingredients
+            return !uncheckedIngredients.some(unchecked => 
+              recipeIngredients.some(ingredient => 
+                ingredient.includes(unchecked)
+              )
+            );
+          });
+
+      // Format the recipes with their ingredients
+      const formattedRecipes = filteredRecipes.map(recipe => ({
+        ...recipe,
+        ingredients: recipe.recipe_ingredient?.map(ri => ({
+          name: ri.ingredient.name,
+          quantity: ri.quantity
+        })) || []
+      }));
+
+      setRecipes(formattedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
     } finally {
@@ -94,30 +120,78 @@ const Home = () => {
     }
   };
 
-  const handleFilterChange = (category, value) => {
-    setFilters(prev => ({
-      ...prev,
-      [category]: category === 'dietary' 
-        ? { ...prev.dietary, [value]: !prev.dietary[value] }
-        : value
-    }));
+  useEffect(() => {
+    fetchRecipes();
+  }, [excludedIngredients]); // Fetch recipes when excluded ingredients change
+
+  const handleRecipeClick = async (recipe) => {
+    console.log('Recipe clicked:', recipe);
+    
+    // First set the basic recipe data to show the modal immediately
+    setSelectedRecipe({
+      ...recipe,
+      ingredients: [] // Will be populated after fetch
+    });
+    
+    try {
+      // Then fetch the complete details
+      const { data, error } = await supabase
+        .from('recipe')
+        .select(`
+          *,
+          recipe_ingredient!inner (
+            ingredient!inner (
+              name,
+              ingredientid
+            ),
+            quantity
+          )
+        `)
+        .eq('recipeid', recipe.recipeid)
+        .single();
+
+      if (error) {
+        console.error('Error fetching recipe:', error);
+        return;
+      }
+
+      if (!data) {
+        console.error('No recipe data returned');
+        return;
+      }
+
+      // Update the recipe with full details
+      const formattedRecipe = {
+        ...data,
+        ingredients: data.recipe_ingredient.map(ri => ({
+          name: ri.ingredient.name,
+          quantity: ri.quantity
+        }))
+      };
+
+      console.log('Setting full recipe data:', formattedRecipe);
+      setSelectedRecipe(formattedRecipe);
+    } catch (error) {
+      console.error('Error in handleRecipeClick:', error);
+    }
   };
 
   return (
     <div className="home-container">
       <div 
         className="hero-banner"
-        style={{ backgroundImage: `url(${bakingBackground})` }}
+        style={{ backgroundImage: `url(${homeBanner})` }}
       >
+        <h1 className="hero-title">Baking is Whisk-Y Business</h1>
         <div className="search-container">
           <div className="search-bar">
             <FontAwesomeIcon icon={faSearch} className="search-icon" />
             <input
               type="text"
-              placeholder="Baking is Whisk-y Business"
+              placeholder="Search recipes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+              onKeyPress={(e) => e.key === 'Enter' && fetchRecipes()}
             />
             <button 
               className="filter-button"
@@ -130,51 +204,23 @@ const Home = () => {
 
           {showFilters && (
             <div className="filters-panel" ref={filterPanelRef}>
-              <div className="filter-section">
-                <h3>Dietary Restrictions</h3>
-                <div className="dietary-options">
-                  {dietaryRestrictions.map((restriction) => (
-                    <label key={restriction.id}>
-                      <input
-                        type="checkbox"
-                        checked={filters.dietary[restriction.id] || false}
-                        onChange={() => handleFilterChange('dietary', restriction.id)}
-                      />
-                      {restriction.name}
-                    </label>
-                  ))}
-                </div>
+              <h2>Exclude Ingredients</h2>
+              <div className="ingredients-grid">
+                {Object.keys(excludedIngredients).map((ingredient) => (
+                  <label 
+                    key={ingredient} 
+                    className="ingredient-checkbox"
+                    data-ingredient={ingredient.toLowerCase()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={excludedIngredients[ingredient]}
+                      onChange={() => handleIngredientToggle(ingredient)}
+                    />
+                    {ingredient.charAt(0).toUpperCase() + ingredient.slice(1)}
+                  </label>
+                ))}
               </div>
-
-              <div className="filter-section">
-                <h3>Preparation Time</h3>
-                <select
-                  value={filters.prepTime}
-                  onChange={(e) => handleFilterChange('prepTime', e.target.value)}
-                >
-                  <option value="all">Any Time</option>
-                  <option value="under30">Under 30 minutes</option>
-                  <option value="30to60">30-60 minutes</option>
-                  <option value="over60">Over 60 minutes</option>
-                </select>
-              </div>
-
-              <div className="filter-section">
-                <h3>Rating</h3>
-                <select
-                  value={filters.rating}
-                  onChange={(e) => handleFilterChange('rating', e.target.value)}
-                >
-                  <option value="all">All Ratings</option>
-                  <option value="4">4+ Stars</option>
-                  <option value="3">3+ Stars</option>
-                  <option value="2">2+ Stars</option>
-                </select>
-              </div>
-
-              <button className="search-button" onClick={handleSearch}>
-                Search
-              </button>
             </div>
           )}
         </div>
@@ -187,7 +233,19 @@ const Home = () => {
         ) : recipes.length > 0 ? (
           <div className="recipe-grid">
             {recipes.map((recipe) => (
-              <div key={recipe.recipeid} className="recipe-card">
+              <div 
+                key={recipe.recipeid} 
+                className="recipe-card"
+                onClick={() => handleRecipeClick(recipe)}
+                style={{ cursor: 'pointer' }}
+                role="button"
+                tabIndex={0}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleRecipeClick(recipe);
+                  }
+                }}
+              >
                 <div className="recipe-image">
                   {recipe.imageurl ? (
                     <img 
@@ -224,6 +282,16 @@ const Home = () => {
           <div className="no-results">No recipes found. Try adjusting your search or filters.</div>
         )}
       </div>
+
+      {selectedRecipe && (
+        <RecipeModal
+          recipe={selectedRecipe}
+          onClose={() => {
+            console.log('Closing modal');
+            setSelectedRecipe(null);
+          }}
+        />
+      )}
     </div>
   );
 };

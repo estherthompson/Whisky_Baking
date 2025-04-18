@@ -1,36 +1,27 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faHome,
+  faUpload,
+  faUser
+} from '@fortawesome/free-solid-svg-icons';
 import '../styles/Navbar.css';
 import logo from '../assets/images/Whisky_Baking.png';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-
-  const handleUserAccountClick = () => {
-    // Check if user is logged in
-    const user = localStorage.getItem('user');
-    if (user) {
-      navigate('/user-account');
-    } else {
-      navigate('/login');
-    }
-    setIsMenuOpen(false);
-  };
-
-  const handleUploadRecipeClick = () => {
-    // Check if user is logged in
-    const user = localStorage.getItem('user');
-    if (user) {
-      navigate('/upload-recipe');
-    } else {
-      navigate('/login');
-    }
-    setIsMenuOpen(false);
-  };
 
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
+  };
+
+  const isActive = (path) => {
+    if (path === '/' && location.pathname === '/') return true;
+    if (path !== '/' && location.pathname.startsWith(path)) return true;
+    return false;
   };
 
   return (
@@ -44,27 +35,34 @@ const Navbar = () => {
         </button>
         <ul className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
           <li className="nav-item">
-            <Link to="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>
-              Home
+            <Link 
+              to="/" 
+              className={`nav-link ${isActive('/') ? 'active' : ''}`}
+              onClick={() => setIsMenuOpen(false)}
+            >
+              <FontAwesomeIcon icon={faHome} className="nav-icon" />
+              <span className="nav-text">Home</span>
             </Link>
           </li>
           <li className="nav-item">
-            <button 
-              onClick={handleUploadRecipeClick}
-              className="nav-link"
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            <Link 
+              to="/upload-recipe"
+              onClick={() => setIsMenuOpen(false)}
+              className={`nav-link ${isActive('/upload-recipe') ? 'active' : ''}`}
             >
-              Upload Recipe
-            </button>
+              <FontAwesomeIcon icon={faUpload} className="nav-icon" />
+              <span className="nav-text">Upload Recipe</span>
+            </Link>
           </li>
           <li className="nav-item">
-            <button 
-              onClick={handleUserAccountClick}
-              className="nav-link"
-              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            <Link 
+              to='/user-account'
+              onClick={() => setIsMenuOpen(false)}
+              className={`nav-link ${isActive('/user-account') ? 'active' : ''}`}
             >
-              User Account
-            </button>
+              <FontAwesomeIcon icon={faUser} className="nav-icon" />
+              <span className="nav-text">User Account</span>
+            </Link>
           </li>
         </ul>
       </div>
