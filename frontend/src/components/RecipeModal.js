@@ -73,6 +73,11 @@ const RecipeModal = ({ recipe, onClose }) => {
               <p>{recipe.instructions}</p>
             </div>
           )}
+
+          <div className="recipe-instructions" style={{marginTop: '20px', backgroundColor: '#E0FFE0'}}>
+            <h3>Ratings and Reviews</h3>
+            <p>No reviews yet. Be the first to review this recipe!</p>
+          </div>
         </div>
       </div>
     </div>

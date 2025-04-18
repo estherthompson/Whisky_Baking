@@ -83,21 +83,22 @@ const Home = () => {
       }
 
       // Filter out recipes that contain excluded ingredients
-      const excludedIngredientsArray = Object.entries(excludedIngredients)
-        .filter(([_, isExcluded]) => isExcluded)
+      const uncheckedIngredients = Object.entries(excludedIngredients)
+        .filter(([_, isChecked]) => !isChecked)  // Get unchecked ingredients
         .map(([ingredient]) => ingredient.toLowerCase());
 
-      // Show all recipes initially, then filter based on excluded ingredients
-      const filteredRecipes = excludedIngredientsArray.length === Object.keys(excludedIngredients).length
-        ? data // Show all recipes if all ingredients are excluded (initial state)
+      // If no ingredients are unchecked, show all recipes
+      const filteredRecipes = uncheckedIngredients.length === 0
+        ? data // Show all recipes if no ingredients are unchecked
         : data.filter(recipe => {
             const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
               ri.ingredient.name.toLowerCase()
             ) || [];
             
-            return !excludedIngredientsArray.some(excluded => 
+            // Filter out recipes that contain any unchecked ingredients
+            return !uncheckedIngredients.some(unchecked => 
               recipeIngredients.some(ingredient => 
-                ingredient.includes(excluded)
+                ingredient.includes(unchecked)
               )
             );
           });
@@ -181,7 +182,11 @@ const Home = () => {
         className="hero-banner"
         style={{ backgroundImage: `url(${homeBanner})` }}
       >
+<<<<<<< Updated upstream
         <h1 className="hero-title">Baking is Whisk-y Business</h1>
+=======
+        <h1 className="hero-title">Baking is Whisk-Y Business</h1>
+>>>>>>> Stashed changes
         <div className="search-container">
           <div className="search-bar">
             <FontAwesomeIcon icon={faSearch} className="search-icon" />
