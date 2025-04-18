@@ -181,7 +181,7 @@ const Home = () => {
         className="hero-banner"
         style={{ backgroundImage: `url(${homeBanner})` }}
       >
-        <h1 className="hero-title">Baking is Whisk-Y Business</h1>
+        <h1 className="hero-title">Baking is Business</h1>
         <div className="search-container">
           <div className="search-bar">
             <FontAwesomeIcon icon={faSearch} className="search-icon" />
