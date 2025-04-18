@@ -14,28 +14,6 @@ const Navbar = () => {
   const location = useLocation();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  const handleUserAccountClick = () => {
-    // Check if user is logged in
-    const user = localStorage.getItem('user');
-    if (user) {
-      navigate('/user-account');
-    } else {
-      navigate('/login');
-    }
-    setIsMenuOpen(false);
-  };
-
-  const handleUploadRecipeClick = () => {
-    // Check if user is logged in
-    const user = localStorage.getItem('user');
-    if (user) {
-      navigate('/upload-recipe');
-    } else {
-      navigate('/login');
-    }
-    setIsMenuOpen(false);
-  };
-
   const toggleMenu = () => {
     setIsMenuOpen(!isMenuOpen);
   };
