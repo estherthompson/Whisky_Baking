@@ -15,6 +15,7 @@
   max-width: 800px;
   min-height: 600px;
   overflow: hidden;
+  margin: 0 auto;
 }
 
 .login-container {
@@ -25,24 +26,98 @@
   padding: 2rem;
   border-right: 1px solid black;
   min-width: 350px;
+  width: 100%;
 }
 
 .login-form {
   width: 100%;
-  max-width: 350px;
-  height: 100%;
+  max-width: 500px;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.login-logo {
+  width: clamp(250px, 60vw, 500px);
+  height: auto;
+  margin: 0 auto clamp(1rem, 3vh, 1.5rem);
+  display: block;
+  object-fit: contain;
+  max-width: 100%;
+}
+
+@media (max-width: 480px) {
+  .main-container {
+    padding: 0;
+    min-height: 100vh;
+  }
+
+  .white-box {
+    width: 100%;
+    max-width: 100%;
+    min-height: 100vh;
+    border-radius: 0;
+    box-shadow: none;
+    margin: 0;
+  }
+
+  .login-container {
+    padding: 1rem;
+    min-width: unset;
+    border-right: none;
+    width: 100%;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+  }
+  
+  .login-form {
+    width: 100%;
+    padding: 0 1rem;
+    max-width: 100%;
+  }
+  
+  .login-logo {
+    width: clamp(200px, 55vw, 450px);
+    margin: 0 auto clamp(0.75rem, 2vh, 1.25rem);
+  }
+
+  .image-container {
+    display: none !important;
+  }
+
+  .form-group input {
+    font-size: 16px; /* Prevents zoom on iOS */
+    padding: 12px;
+  }
+
+  .submit-btn {
+    padding: 12px;
+    font-size: 16px;
+  }
+
+  .toggle-form {
+    margin-top: 1rem;
+    font-size: 14px;
+  }
+
+  .error-message {
+    font-size: 14px;
+    padding: 0.75rem;
+  }
 }
 
 .login-form h2 {
   text-align: center;
-  margin: 0;
+  margin: 0 0 1rem 0;
   color: #333;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 .form-group {
+  width: 100%;
   margin-bottom: 1rem;
 }
 
@@ -51,18 +126,21 @@
   margin-bottom: 0.5rem;
   color: #333;
   font-weight: 500;
-  border: #000;
+  text-align: left;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 .form-group input {
   width: 100%;
   padding: 0.75rem;
   border: 1px solid #ddd;
-  border-radius: 4px;
+  border-radius: 5px;
   font-size: clamp(0.9rem, 2vw, 1rem);
   transition: border-color 0.2s;
   border-width: 1px;
   border-color: #0b0903;
+  box-sizing: border-box;
+  font-family: 'Gill Sans', 'Gill Sans MT', Calibri, 'Trebuchet MS', sans-serif;
 }
 
 .form-group input:focus {
@@ -154,4 +232,49 @@
 .forgot-password a:hover {
   color: #2c4846;
   text-decoration: underline;
+}
+
+.success-message {
+  width: 100%;
+  margin: 0;
+  order: 1;
+}
+
+.success-content {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  padding: 1.5rem;
+  border-radius: 8px;
+  text-align: center;
+  width: 100%;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.success-content strong {
+  display: block;
+  margin-bottom: 0.75rem;
+  font-size: 1.1rem;
+  color: #1b5e20;
+}
+
+.success-content p {
+  margin-bottom: 1rem;
+  line-height: 1.5;
+  font-size: 0.95rem;
+}
+
+.success-content .toggle-btn {
+  background-color: #4caf50;
+  color: white;
+  border: none;
+  padding: 0.5rem 1.25rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  font-size: 0.9rem;
+}
+
+.success-content .toggle-btn:hover {
+  background-color: #388e3c;
 }

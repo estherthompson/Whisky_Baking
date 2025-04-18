@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Navbar.css';
 
 const Navbar = () => {
   const navigate = useNavigate();
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   const handleUserAccountClick = () => {
     // Check if user is logged in
@@ -13,6 +14,22 @@ const Navbar = () => {
     } else {
       navigate('/login');
     }
+    setIsMenuOpen(false);
+  };
+
+  const handleUploadRecipeClick = () => {
+    // Check if user is logged in
+    const user = localStorage.getItem('user');
+    if (user) {
+      navigate('/upload-recipe');
+    } else {
+      navigate('/login');
+    }
+    setIsMenuOpen(false);
+  };
+
+  const toggleMenu = () => {
+    setIsMenuOpen(!isMenuOpen);
   };
 
   return (
@@ -21,16 +38,23 @@ const Navbar = () => {
         <Link to="/" className="nav-logo">
           Whisky Baking
         </Link>
-        <ul className="nav-menu">
+        <button className="mobile-menu-btn" onClick={toggleMenu}>
+          {isMenuOpen ? '✕' : '☰'}
+        </button>
+        <ul className={`nav-menu ${isMenuOpen ? 'active' : ''}`}>
           <li className="nav-item">
-            <Link to="/" className="nav-link">
+            <Link to="/" className="nav-link" onClick={() => setIsMenuOpen(false)}>
               Home
             </Link>
           </li>
           <li className="nav-item">
-            <Link to="/upload-recipe" className="nav-link">
+            <button 
+              onClick={handleUploadRecipeClick}
+              className="nav-link"
+              style={{ background: 'none', border: 'none', cursor: 'pointer' }}
+            >
               Upload Recipe
-            </Link>
+            </button>
           </li>
           <li className="nav-item">
             <button 
