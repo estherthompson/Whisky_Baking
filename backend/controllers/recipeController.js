@@ -323,12 +323,38 @@ export const getRecipeById = async (req, res) => {
 
 export const getAllRecipes = async (req, res) => {
     try {
-        console.log('Fetching all recipes');
+        console.log('Fetching recipes with filters:', req.query);
+        const { search, dietary } = req.query;
         
-        // Fetch all recipes
-        const { data: recipes, error: recipesError } = await supabase
+        // Start building the query
+        let query = supabase
             .from('recipe')
-            .select('recipeid, name, description, recipetime')
+            .select(`
+                *,
+                recipe_ingredient!inner (
+                    ingredient!inner (
+                        name,
+                        dietary_restriction_ingredient!inner (
+                            dietary_restriction!inner (name)
+                        )
+                    )
+                ),
+                rating (score)
+            `);
+
+        // Apply search filter if provided
+        if (search) {
+            query = query.ilike('name', `%${search}%`);
+        }
+
+        // Apply dietary restrictions filter if provided
+        if (dietary) {
+            const restrictions = dietary.split(',');
+            query = query.in('recipe_ingredient.ingredient.dietary_restriction_ingredient.dietary_restriction.name', restrictions);
+        }
+
+        // Execute the query
+        const { data: recipes, error: recipesError } = await query
             .order('recipeid', { ascending: false });
 
         if (recipesError) {
@@ -339,7 +365,30 @@ export const getAllRecipes = async (req, res) => {
             });
         }
 
-        res.status(200).json(recipes);
+        // Calculate average ratings and format response
+        const formattedRecipes = recipes.map(recipe => {
+            const avgRating = recipe.rating && recipe.rating.length > 0
+                ? (recipe.rating.reduce((acc, curr) => acc + curr.score, 0) / recipe.rating.length).toFixed(1)
+                : null;
+
+            return {
+                recipeid: recipe.recipeid,
+                name: recipe.name,
+                description: recipe.description,
+                recipetime: recipe.recipetime,
+                image_url: recipe.image_url,
+                rating: avgRating,
+                dietary_restrictions: [...new Set(
+                    recipe.recipe_ingredient
+                        ?.flatMap(ri => ri.ingredient.dietary_restriction_ingredient
+                            ?.map(dri => dri.dietary_restriction.name)
+                        )
+                        .filter(Boolean) || []
+                )]
+            };
+        });
+
+        res.status(200).json(formattedRecipes);
     } catch (error) {
         console.error('Server error:', error);
         res.status(500).json({ 
