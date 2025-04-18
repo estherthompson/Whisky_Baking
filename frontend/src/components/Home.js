@@ -8,7 +8,7 @@ import {
   faClock,
   faUtensils
 } from '@fortawesome/free-solid-svg-icons';
-import bakingBackground from '../assets/images/baking-background.jpg';
+import homeBanner from '../assets/images/home-banner.jpg';
 import { supabase } from '../supabaseClient';
 import RecipeModal from './RecipeModal';
 
@@ -179,7 +179,7 @@ const Home = () => {
     <div className="home-container">
       <div 
         className="hero-banner"
-        style={{ backgroundImage: `url(${bakingBackground})` }}
+        style={{ backgroundImage: `url(${homeBanner})` }}
       >
         <h1 className="hero-title">Baking is Whisk-Y Business</h1>
         <div className="search-container">

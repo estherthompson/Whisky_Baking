@@ -42,8 +42,10 @@ const RecipeModal = ({ recipe, onClose }) => {
 
         <div className="modal-right">
           <div className="modal-header">
-            <h2>{recipe.name}</h2>
-            <p className="recipe-description">{recipe.description}</p>
+            <h2 className="recipe-title">{recipe.name}</h2>
+            <div className="recipe-description-container">
+              <p className="recipe-description">{recipe.description}</p>
+            </div>
             <div className="recipe-meta">
               <span className="prep-time">
                 <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min

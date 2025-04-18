@@ -17,8 +17,8 @@
   border-radius: 8px;
   padding: 30px;
   width: 90%;
-  max-width: 600px;
-  max-height: 80vh;
+  max-width: 800px;
+  max-height: 85vh;
   overflow-y: auto;
   position: relative;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
@@ -42,6 +42,8 @@
   margin: 0 0 30px 0;
   text-align: center;
   color: #333;
+  line-height: 1.4;
+  word-wrap: break-word;
 }
 
 .ingredients-section h3 {
@@ -68,6 +70,37 @@
 
 .ingredient-item:last-child {
   border-bottom: none;
+}
+
+.recipe-description-container {
+  margin: 20px 0;
+  width: 100%;
+}
+
+.modal-content .recipe-description {
+  white-space: pre-wrap;
+  line-height: 1.6;
+  color: #333;
+  font-size: 16px;
+  word-wrap: break-word;
+  overflow: visible;
+  max-height: none;
+  display: block;
+  -webkit-line-clamp: none;
+  -webkit-box-orient: vertical;
+  text-overflow: clip;
+  height: auto;
+  min-height: auto;
+}
+
+.recipe-instructions {
+  white-space: pre-line;
+}
+
+.modal-right {
+  flex: 1;
+  padding: 0 20px;
+  overflow-y: auto;
 }
 
 @media (max-width: 768px) {

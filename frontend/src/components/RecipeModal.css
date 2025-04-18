@@ -99,6 +99,8 @@
   overflow-wrap: break-word;
   width: 100%;
   padding-right: 40px;
+  font-family: 'Quicksand', sans-serif;
+  font-weight: 600;
 }
 
 .recipe-description {
@@ -108,6 +110,12 @@
   font-size: 1.1rem;
   word-wrap: break-word;
   overflow-wrap: break-word;
+  white-space: pre-wrap;
+  overflow: visible;
+  max-height: none;
+  display: block;
+  -webkit-line-clamp: none;
+  -webkit-box-orient: vertical;
 }
 
 .recipe-meta {
