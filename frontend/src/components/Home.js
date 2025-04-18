@@ -182,11 +182,7 @@ const Home = () => {
         className="hero-banner"
         style={{ backgroundImage: `url(${homeBanner})` }}
       >
-<<<<<<< Updated upstream
-        <h1 className="hero-title">Baking is Whisk-y Business</h1>
-=======
         <h1 className="hero-title">Baking is Whisk-Y Business</h1>
->>>>>>> Stashed changes
         <div className="search-container">
           <div className="search-bar">
             <FontAwesomeIcon icon={faSearch} className="search-icon" />
