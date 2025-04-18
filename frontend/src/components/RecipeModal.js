@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import './RecipeModal.css';
+import '../styles/RecipeModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faClock, faStar } from '@fortawesome/free-solid-svg-icons';
 
