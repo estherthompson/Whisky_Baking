@@ -1,78 +1,76 @@
 .navbar {
-  background: linear-gradient(135deg, #FF69B4, #C71585);
-  padding: 1rem 0;
-  box-shadow: var(--box-shadow);
-  position: relative;
+  background-color: #ffd1dc;
+  height: 56px;
+  padding: 0;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
 }
 
 .nav-container {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  height: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 0 20px;
-  position: relative;
 }
 
 .nav-logo {
-  color: var(--light-text);
-  font-size: clamp(1.2rem, 4vw, 1.5rem);
+  color: #333;
+  font-size: 20px;
   font-weight: bold;
+  text-decoration: none;
   transition: color 0.3s ease;
-  white-space: nowrap;
+  margin-right: auto;
 }
 
 .nav-logo:hover {
-  color: var(--secondary-color);
+  color: #000;
 }
 
 .nav-menu {
   display: flex;
   list-style: none;
-  gap: clamp(1rem, 2vw, 2rem);
+  gap: 2rem;
   margin: 0;
   padding: 0;
+  height: 100%;
+  align-items: center;
 }
 
 .nav-item {
-  position: relative;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .nav-link {
-  color: var(--light-text);
+  color: #333;
   font-weight: 500;
-  padding: 0.5rem 1rem;
+  padding: 0 1rem;
+  text-decoration: none;
   transition: color 0.3s ease;
-  font-size: clamp(0.9rem, 2vw, 1rem);
-  white-space: nowrap;
+  font-size: 16px;
+  height: 100%;
+  display: flex;
+  align-items: center;
 }
 
 .nav-link:hover {
-  color: var(--secondary-color);
-}
-
-.nav-link::after {
-  content: '';
-  position: absolute;
-  bottom: -5px;
-  left: 0;
-  width: 0;
-  height: 2px;
-  background-color: var(--secondary-color);
-  transition: width 0.3s ease;
-}
-
-.nav-link:hover::after {
-  width: 100%;
+  color: #000;
 }
 
 .mobile-menu-btn {
   display: none;
   background: none;
   border: none;
-  color: var(--light-text);
-  font-size: 1.5rem;
+  color: #333;
+  font-size: 24px;
   cursor: pointer;
   padding: 0.5rem;
 }
@@ -85,14 +83,15 @@
   .nav-menu {
     display: none;
     position: absolute;
-    top: 100%;
+    top: 56px;
     left: 0;
     right: 0;
-    background: linear-gradient(135deg, #FF69B4, #C71585);
+    background-color: #ffd1dc;
     flex-direction: column;
     padding: 1rem;
     gap: 1rem;
     z-index: 1000;
+    height: auto;
   }
 
   .nav-menu.active {
@@ -102,15 +101,13 @@
   .nav-item {
     width: 100%;
     text-align: center;
+    height: auto;
   }
 
   .nav-link {
-    display: block;
+    width: 100%;
     padding: 0.75rem;
-  }
-
-  .nav-link::after {
-    display: none;
+    justify-content: center;
   }
 }
 
@@ -125,6 +122,5 @@
 
   .nav-link {
     font-size: 0.9rem;
-    padding: 0.5rem;
   }
 } 
