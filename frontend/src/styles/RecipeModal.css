@@ -217,4 +217,55 @@
   .recipe-ingredients ul {
     grid-template-columns: 1fr;
   }
+}
+
+.recipe-reviews {
+  margin-top: 25px;
+  padding: 20px;
+  background-color: #E0FFE0;  /* Soft green */
+  border-radius: 12px;
+}
+
+.reviews-list {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.review-item {
+  background-color: rgba(255, 255, 255, 0.7);
+  padding: 15px;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.review-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.review-user {
+  font-weight: 600;
+  color: #333;
+}
+
+.review-date {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.review-rating {
+  margin: 8px 0;
+}
+
+.review-rating svg {
+  margin-right: 2px;
+}
+
+.review-comment {
+  margin: 8px 0 0 0;
+  color: #444;
+  line-height: 1.5;
 } 

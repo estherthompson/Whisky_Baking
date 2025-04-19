@@ -7,6 +7,7 @@ import authRoutes from './routes/authRoutes.js';
 import adminRoutes from './routes/adminRoutes.js';
 import recipeRoutes from './routes/recipeRoutes.js';
 import ingredientRoutes from './routes/ingredientRoutes.js';
+import ratingRoutes from './routes/ratingRoutes.js';
 
 dotenv.config();
 
@@ -27,6 +28,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api', recipeRoutes);
 app.use('/api', ingredientRoutes);
+app.use('/api', ratingRoutes);
 
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

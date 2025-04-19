@@ -145,6 +145,15 @@ const Home = () => {
               ingredientid
             ),
             quantity
+          ),
+          rating (
+            ratingid,
+            score,
+            reviewtext,
+            dateposted,
+            user_account (
+              name
+            )
           )
         `)
         .eq('recipeid', recipe.recipeid)
@@ -160,13 +169,22 @@ const Home = () => {
         return;
       }
 
+      // Calculate average rating
+      let averageRating = 0;
+      if (data.rating && data.rating.length > 0) {
+        const totalRating = data.rating.reduce((sum, r) => sum + r.score, 0);
+        averageRating = totalRating / data.rating.length;
+      }
+
       // Update the recipe with full details
       const formattedRecipe = {
         ...data,
         ingredients: data.recipe_ingredient.map(ri => ({
           name: ri.ingredient.name,
           quantity: ri.quantity
-        }))
+        })),
+        ratings: data.rating || [],
+        averageRating
       };
 
       console.log('Setting full recipe data:', formattedRecipe);
