@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from 'react';
-import './RecipeModal.css';
+import '../styles/RecipeModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faTimes, faClock, faStar } from '@fortawesome/free-solid-svg-icons';
 
@@ -21,6 +21,16 @@ const RecipeModal = ({ recipe, onClose }) => {
     if (e.target === e.currentTarget) {
       onClose();
     }
+  };
+
+  const renderStars = (score) => {
+    return [...Array(5)].map((_, index) => (
+      <FontAwesomeIcon
+        key={index}
+        icon={faStar}
+        style={{ color: index < score ? '#FFD700' : '#DDD' }}
+      />
+    ));
   };
 
   if (!recipe) return null;
@@ -51,7 +61,7 @@ const RecipeModal = ({ recipe, onClose }) => {
                 <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
               </span>
               <span className="rating">
-                <FontAwesomeIcon icon={faStar} /> {recipe.average_rating || 'N/A'}
+                <FontAwesomeIcon icon={faStar} /> {recipe.averageRating?.toFixed(1) || 'N/A'} ({recipe.ratings?.length || 0} reviews)
               </span>
             </div>
           </div>
@@ -74,9 +84,28 @@ const RecipeModal = ({ recipe, onClose }) => {
             </div>
           )}
 
-          <div className="recipe-instructions" style={{marginTop: '20px', backgroundColor: '#E0FFE0'}}>
+          <div className="recipe-reviews">
             <h3>Ratings and Reviews</h3>
-            <p>No reviews yet. Be the first to review this recipe!</p>
+            {recipe.ratings && recipe.ratings.length > 0 ? (
+              <div className="reviews-list">
+                {recipe.ratings.map((review) => (
+                  <div key={review.ratingid} className="review-item">
+                    <div className="review-header">
+                      <span className="review-user">{review.user_account?.name || 'Anonymous'}</span>
+                      <span className="review-date">
+                        {new Date(review.dateposted).toLocaleDateString()}
+                      </span>
+                    </div>
+                    <div className="review-rating">
+                      {renderStars(review.score)}
+                    </div>
+                    <p className="review-comment">{review.reviewtext}</p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p>No reviews yet. Be the first to review this recipe!</p>
+            )}
           </div>
         </div>
       </div>

@@ -259,64 +259,72 @@ export const savedRecipe = async (req, res) => {
 export const getRecipeById = async (req, res) => {
     try {
         const { id } = req.params;
-        console.log(`Fetching recipe with ID: ${id}`);
 
-        // Fetch the recipe
+        // Get recipe with ingredients and ratings
         const { data: recipe, error: recipeError } = await supabase
             .from('recipe')
-            .select('recipeid, name, instructions, description, recipetime')
+            .select(`
+                *,
+                recipe_ingredient (
+                    quantity,
+                    ingredient (
+                        name,
+                        ingredientid
+                    )
+                ),
+                rating (
+                    ratingid,
+                    score,
+                    reviewtext,
+                    dateposted,
+                    user_account (
+                        name
+                    )
+                )
+            `)
             .eq('recipeid', id)
             .single();
 
         if (recipeError) {
             console.error('Error fetching recipe:', recipeError);
-            return res.status(404).json({ 
+            return res.status(404).json({
                 error: 'Recipe not found',
-                details: recipeError.message 
+                details: recipeError.message
             });
         }
 
-        // Fetch the recipe ingredients
-        const { data: recipeIngredients, error: ingredientsError } = await supabase
-            .from('recipe_ingredient')
-            .select(`
-                recipeid,
-                ingredientid,
-                quantity,
-                ingredient:ingredientid (
-                    ingredientid,
-                    name,
-                    category,
-                    isallergen,
-                    nutritioninfo
-                )
-            `)
-            .eq('recipeid', id);
-
-        if (ingredientsError) {
-            console.error('Error fetching recipe ingredients:', ingredientsError);
-            return res.status(500).json({ 
-                error: 'Failed to fetch recipe ingredients',
-                details: ingredientsError.message 
-            });
+        // Calculate average rating
+        let averageRating = 0;
+        if (recipe.rating && recipe.rating.length > 0) {
+            const totalRating = recipe.rating.reduce((sum, r) => sum + r.score, 0);
+            averageRating = totalRating / recipe.rating.length;
         }
 
-        // Format the ingredients
-        const ingredients = recipeIngredients.map(item => ({
-            ...item.ingredient,
-            quantity: item.quantity
+        // Format ingredients
+        const ingredients = recipe.recipe_ingredient.map(ri => ({
+            name: ri.ingredient.name,
+            ingredientid: ri.ingredient.ingredientid,
+            quantity: ri.quantity
         }));
 
-        // Return the complete recipe with ingredients
-        res.status(200).json({
+        // Format the response
+        const formattedRecipe = {
             ...recipe,
-            ingredients
-        });
+            ingredients,
+            averageRating,
+            ratings: recipe.rating || []
+        };
+
+        delete formattedRecipe.recipe_ingredient;
+        delete formattedRecipe.rating;
+
+        res.json(formattedRecipe);
+
     } catch (error) {
         console.error('Server error:', error);
-        res.status(500).json({ 
+        res.status(500).json({
             error: 'An unexpected error occurred',
-            details: error.message 
+            details: error.message
         });
     }
 };
@@ -394,6 +402,88 @@ export const getAllRecipes = async (req, res) => {
         res.status(500).json({ 
             error: 'An unexpected error occurred',
             details: error.message 
+        });
+    }
+};
+
+// Add this new function to handle creating a rating for a recipe
+export const addRatingToRecipe = async (req, res) => {
+    try {
+        const { recipeid } = req.params;
+        const { userid, score, reviewtext } = req.body;
+
+        // First check if recipe exists
+        const { data: recipe, error: recipeError } = await supabase
+            .from('recipe')
+            .select('recipeid')
+            .eq('recipeid', recipeid)
+            .single();
+
+        if (recipeError || !recipe) {
+            return res.status(404).json({
+                error: 'Recipe not found',
+                details: recipeError?.message || 'Recipe does not exist'
+            });
+        }
+
+        // Check if user has already rated this recipe
+        const { data: existingRating, error: checkError } = await supabase
+            .from('rating')
+            .select('ratingid')
+            .eq('recipeid', recipeid)
+            .eq('userid', userid)
+            .single();
+
+        if (existingRating) {
+            return res.status(400).json({
+                error: 'User has already rated this recipe'
+            });
+        }
+
+        // Get the last rating ID
+        const { data: lastRating } = await supabase
+            .from('rating')
+            .select('ratingid')
+            .order('ratingid', { ascending: false })
+            .limit(1)
+            .single();
+
+        const nextRatingId = lastRating ? lastRating.ratingid + 1 : 1;
+
+        // Create the new rating
+        const { data: rating, error } = await supabase
+            .from('rating')
+            .insert([
+                {
+                    ratingid: nextRatingId,
+                    recipeid,
+                    userid,
+                    score,
+                    dateposted: new Date().toISOString().split('T')[0],
+                    reviewtext
+                }
+            ])
+            .select()
+            .single();
+
+        if (error) {
+            console.error('Error creating rating:', error);
+            return res.status(400).json({
+                error: 'Failed to create rating',
+                details: error.message
+            });
+        }
+
+        res.status(201).json({
+            message: 'Rating added successfully',
+            rating
+        });
+
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({
+            error: 'An unexpected error occurred',
+            details: error.message
         });
     }
 };
