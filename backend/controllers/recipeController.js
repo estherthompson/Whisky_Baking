@@ -65,7 +65,7 @@ export const createRecipe = async (req, res) => {
         const nextRecipeId = lastRecipe ? lastRecipe.recipeid + 1 : 1;
         console.log('Attempting to insert recipe with ID:', nextRecipeId);
         
-        // Insert the recipe with the generated ID
+        // Insert the recipe with the generated ID and userId
         const { data: recipeData, error: recipeError } = await supabase
             .from('recipe')
             .insert([
@@ -74,7 +74,8 @@ export const createRecipe = async (req, res) => {
                     name,
                     instructions,
                     description,
-                    recipetime: recipeTimeInt
+                    recipetime: recipeTimeInt,
+                    userid: userId  // Adding userId to the recipe table
                 }
             ])
             .select()
@@ -167,7 +168,7 @@ export const createRecipe = async (req, res) => {
             }
         }
 
-        // If userId provided, save recipe for the user
+        // We'll still save to saved_recipes for backward compatibility
         if (userId) {
             const { error: savedError } = await supabase
                 .from('saved_recipes')
@@ -332,18 +333,20 @@ export const getRecipeById = async (req, res) => {
 export const getAllRecipes = async (req, res) => {
     try {
         console.log('Fetching recipes with filters:', req.query);
-        const { search, dietary } = req.query;
+        const { search, dietary, userId } = req.query;
+        
+        console.log('Processing userId filter:', userId);
         
         // Start building the query
         let query = supabase
             .from('recipe')
             .select(`
                 *,
-                recipe_ingredient!inner (
-                    ingredient!inner (
+                recipe_ingredient (
+                    ingredient (
                         name,
-                        dietary_restriction_ingredient!inner (
-                            dietary_restriction!inner (name)
+                        dietary_restriction_ingredient (
+                            dietary_restriction (name)
                         )
                     )
                 ),
@@ -361,10 +364,25 @@ export const getAllRecipes = async (req, res) => {
             query = query.in('recipe_ingredient.ingredient.dietary_restriction_ingredient.dietary_restriction.name', restrictions);
         }
 
+        // Filter by userId if provided - for "My Recipes" functionality
+        if (userId) {
+            console.log('Filtering recipes by userId:', userId);
+            // Try to convert userId to a number if it's a string
+            const userIdNum = parseInt(userId, 10);
+            if (!isNaN(userIdNum)) {
+                console.log('Using numeric userId for filtering:', userIdNum);
+                query = query.eq('userid', userIdNum);
+            } else {
+                console.log('Using string userId for filtering:', userId);
+                query = query.eq('userid', userId);
+            }
+        }
+
         // Execute the query
         const { data: recipes, error: recipesError } = await query
             .order('recipeid', { ascending: false });
 
+        console.log('Query result - recipes count:', recipes?.length || 0);
         if (recipesError) {
             console.error('Error fetching recipes:', recipesError);
             return res.status(500).json({ 
@@ -386,16 +404,23 @@ export const getAllRecipes = async (req, res) => {
                 recipetime: recipe.recipetime,
                 image_url: recipe.image_url,
                 rating: avgRating,
-                dietary_restrictions: [...new Set(
-                    recipe.recipe_ingredient
-                        ?.flatMap(ri => ri.ingredient.dietary_restriction_ingredient
-                            ?.map(dri => dri.dietary_restriction.name)
-                        )
-                        .filter(Boolean) || []
-                )]
+                userid: recipe.userid, // Include the userid in the response
+                dietary_restrictions: recipe.recipe_ingredient 
+                    ? [...new Set(
+                        recipe.recipe_ingredient
+                            .flatMap(ri => 
+                                ri.ingredient?.dietary_restriction_ingredient 
+                                ? ri.ingredient.dietary_restriction_ingredient
+                                    .map(dri => dri.dietary_restriction?.name)
+                                    .filter(Boolean)
+                                : []
+                            )
+                        )]
+                    : []
             };
         });
 
+        console.log('Sending formatted recipes count:', formattedRecipes.length);
         res.status(200).json(formattedRecipes);
     } catch (error) {
         console.error('Server error:', error);
@@ -483,6 +508,53 @@ export const addRatingToRecipe = async (req, res) => {
         console.error('Server error:', error);
         res.status(500).json({
             error: 'An unexpected error occurred',
+            details: error.message
+        });
+    }
+};
+
+// Debug function to directly test querying by userId
+export const debugGetUserRecipes = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        console.log('Debug - querying with userId:', userId);
+        
+        // Try different formats of userId to see which one works
+        const userIdNum = parseInt(userId, 10);
+        console.log('Debug - userId as number:', userIdNum);
+        
+        // Direct query with no joins to simplify debugging
+        const { data: recipes, error } = await supabase
+            .from('recipe')
+            .select('*')
+            .eq('userid', userIdNum);
+            
+        console.log('Debug - direct query results:', {
+            count: recipes?.length || 0,
+            error: error
+        });
+        
+        // Also try with the original string value
+        const { data: recipes2, error: error2 } = await supabase
+            .from('recipe')
+            .select('*')
+            .eq('userid', userId);
+            
+        console.log('Debug - string value query results:', {
+            count: recipes2?.length || 0,
+            error: error2
+        });
+        
+        // Send the response with the number results
+        res.status(200).json({
+            message: 'Debug query results',
+            numberResults: recipes || [],
+            stringResults: recipes2 || []
+        });
+    } catch (error) {
+        console.error('Debug query error:', error);
+        res.status(500).json({
+            error: 'Debug query failed',
             details: error.message
         });
     }

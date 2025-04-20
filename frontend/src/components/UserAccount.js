@@ -9,19 +9,216 @@ import activityIcon from '../assets/icons/activity.svg';
 import settingsIcon from '../assets/icons/settings.svg';
 import defaultProfileImage from '../assets/images/login-image.png';
 import UserManagement from './UserManagement';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { 
+  faStar, 
+  faClock, 
+  faUtensils, 
+  faComment, 
+  faPlus, 
+  faBookmark,
+  faHistory
+} from '@fortawesome/free-solid-svg-icons';
+import RecipeModal from './RecipeModal';
 
 const UserAccount = () => {
   const navigate = useNavigate();
   const user = JSON.parse(localStorage.getItem('user'));
-  const [activeTab, setActiveTab] = useState('admin');
+  const [activeTab, setActiveTab] = useState('my-recipes'); // Default to my-recipes
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [imagePreview, setImagePreview] = useState(user?.profileImage || defaultProfileImage);
+  const [myRecipes, setMyRecipes] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [activityLoading, setActivityLoading] = useState(false);
+  const [activityFilter, setActivityFilter] = useState('all');
 
   useEffect(() => {
     if (!user) {
       navigate('/login');
     }
   }, [user, navigate]);
+
+  // Fetch user recipes when the component mounts or when activeTab changes to 'my-recipes'
+  useEffect(() => {
+    if (activeTab === 'my-recipes' && user) {
+      console.log("Full user object from localStorage:", user);
+      console.log("User ID property name check:", {
+        UserID: user.UserID,
+        userid: user.userid,
+        userId: user.userId,
+        user_id: user.user_id
+      });
+      fetchUserRecipes();
+    }
+    
+    if (activeTab === 'activity' && user) {
+      fetchUserActivities();
+    }
+  }, [activeTab]);
+
+  const fetchUserRecipes = async () => {
+    if (!user) return;
+    
+    // Try to get userId from the various possible property names
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      console.error("Cannot find user ID in user object:", user);
+      return;
+    }
+    
+    console.log("Fetching recipes for user ID:", userId);
+    setLoading(true);
+    
+    try {
+      // Try the debug endpoint first to see what works
+      const debugResponse = await axios.get(`http://localhost:5001/api/debug/user/${userId}/recipes`);
+      console.log("Debug API response:", debugResponse.data);
+      
+      // Use the regular endpoint to get the actual recipes
+      const response = await axios.get(`http://localhost:5001/api/user/${userId}/recipes`);
+      console.log("Received recipes:", response.data);
+      
+      setMyRecipes(response.data);
+      
+      if (response.data.length === 0) {
+        console.log("No recipes found for this user");
+      }
+    } catch (error) {
+      console.error('Error fetching user recipes:', error);
+      console.log("Error response:", error.response?.data);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchUserActivities = async () => {
+    if (!user) return;
+    
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      console.error("Cannot find user ID in user object:", user);
+      return;
+    }
+    
+    setActivityLoading(true);
+    
+    try {
+      // For now, we'll create mock activity data since we don't have this endpoint yet
+      // In a real implementation, you would call an API endpoint like:
+      // const response = await axios.get(`http://localhost:5001/api/user/${userId}/activities`);
+      
+      // Mock data - this would come from your backend in a real implementation
+      const mockActivities = [
+        {
+          id: 1,
+          type: 'rating',
+          recipe: {
+            id: 6,
+            name: 'Walnut Brownies'
+          },
+          date: '2023-12-01T15:30:00',
+          data: {
+            score: 4.5,
+            review: 'These brownies were delicious! The walnuts added a perfect crunch.'
+          }
+        },
+        {
+          id: 2,
+          type: 'creation',
+          recipe: {
+            id: 6,
+            name: 'Walnut Brownies'
+          },
+          date: '2023-11-29T10:15:00',
+          data: {
+            description: 'Fudgy brownies with crunchy walnuts for added texture and flavor.'
+          }
+        },
+        {
+          id: 3,
+          type: 'save',
+          recipe: {
+            id: 5,
+            name: 'Chocolate Chip Cookies'
+          },
+          date: '2023-11-28T18:20:00',
+          data: {}
+        },
+        {
+          id: 4,
+          type: 'comment',
+          recipe: {
+            id: 4,
+            name: 'Vanilla Cake'
+          },
+          date: '2023-11-25T14:10:00',
+          data: {
+            comment: 'I tried this recipe with almond extract instead of vanilla and it was amazing!'
+          }
+        }
+      ];
+      
+      setTimeout(() => {
+        setActivities(mockActivities);
+        setActivityLoading(false);
+      }, 500); // Simulate network delay
+      
+    } catch (error) {
+      console.error('Error fetching user activities:', error);
+      setActivityLoading(false);
+    }
+  };
+
+  const handleRecipeClick = async (recipe) => {
+    try {
+      const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
+      setSelectedRecipe(response.data);
+    } catch (error) {
+      console.error('Error fetching recipe details:', error);
+    }
+  };
+
+  const filterActivities = (activities, filter) => {
+    if (filter === 'all') return activities;
+    return activities.filter(activity => activity.type === filter);
+  };
+
+  const formatDate = (dateString) => {
+    const options = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  const getActivityIcon = (type) => {
+    switch (type) {
+      case 'rating':
+        return <FontAwesomeIcon icon={faStar} />;
+      case 'comment':
+        return <FontAwesomeIcon icon={faComment} />;
+      case 'creation':
+        return <FontAwesomeIcon icon={faPlus} />;
+      case 'save':
+        return <FontAwesomeIcon icon={faBookmark} />;
+      default:
+        return <FontAwesomeIcon icon={faHistory} />;
+    }
+  };
+
+  const getActivityText = (activity) => {
+    switch (activity.type) {
+      case 'rating':
+        return `You rated ${activity.recipe.name} ${activity.data.score} stars: "${activity.data.review}"`;
+      case 'comment':
+        return `You commented on ${activity.recipe.name}: "${activity.data.comment}"`;
+      case 'creation':
+        return `You created a new recipe: ${activity.recipe.name}`;
+      case 'save':
+        return `You saved ${activity.recipe.name} to your collection`;
+      default:
+        return `You interacted with ${activity.recipe.name}`;
+    }
+  };
 
   if (!user) {
     return null;
@@ -107,7 +304,64 @@ const UserAccount = () => {
         {activeTab === 'my-recipes' && (
           <div className="my-recipes">
             <h2>My Recipes</h2>
-            {/* My Recipes content will go here */}
+            {loading ? (
+              <div className="loading">Loading your recipes...</div>
+            ) : myRecipes.length > 0 ? (
+              <div className="recipe-grid">
+                {myRecipes.map((recipe) => (
+                  <div 
+                    key={recipe.recipeid} 
+                    className="recipe-card"
+                    onClick={() => handleRecipeClick(recipe)}
+                    style={{ cursor: 'pointer' }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleRecipeClick(recipe);
+                      }
+                    }}
+                  >
+                    <div className="recipe-image">
+                      {recipe.image_url ? (
+                        <img 
+                          src={recipe.image_url} 
+                          alt={recipe.name}
+                          onError={(e) => {
+                            console.log('Image failed to load:', recipe.image_url);
+                            e.target.onerror = null;
+                            e.target.src = '/placeholder-recipe.jpg';
+                          }}
+                        />
+                      ) : (
+                        <div className="recipe-icon">
+                          <FontAwesomeIcon icon={faUtensils} size="3x" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="recipe-info">
+                      <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>
+                      <div className="recipe-meta">
+                        <span className="prep-time">
+                          <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
+                        </span>
+                        <span className="rating">
+                          <FontAwesomeIcon icon={faStar} /> {recipe.rating || 'N/A'}
+                        </span>
+                      </div>
+                      <p className="recipe-description">{recipe.description || 'No description available'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-recipes">
+                <p>You haven't created any recipes yet.</p>
+                <button className="create-recipe-btn" onClick={() => navigate('/upload-recipe')}>
+                  Create Your First Recipe
+                </button>
+              </div>
+            )}
           </div>
         )}
         {!isAdmin && activeTab === 'saved' && (
@@ -118,8 +372,71 @@ const UserAccount = () => {
         )}
         {!isAdmin && activeTab === 'activity' && (
           <div className="activity">
-            <h2>Activity</h2>
-            {/* Activity content will go here */}
+            <h2>Your Activity</h2>
+            
+            <div className="activity-filter">
+              <button 
+                className={`filter-button ${activityFilter === 'all' ? 'active' : ''}`}
+                onClick={() => setActivityFilter('all')}
+              >
+                All Activity
+              </button>
+              <button 
+                className={`filter-button ${activityFilter === 'rating' ? 'active' : ''}`}
+                onClick={() => setActivityFilter('rating')}
+              >
+                Ratings
+              </button>
+              <button 
+                className={`filter-button ${activityFilter === 'comment' ? 'active' : ''}`}
+                onClick={() => setActivityFilter('comment')}
+              >
+                Comments
+              </button>
+              <button 
+                className={`filter-button ${activityFilter === 'creation' ? 'active' : ''}`}
+                onClick={() => setActivityFilter('creation')}
+              >
+                Creations
+              </button>
+              <button 
+                className={`filter-button ${activityFilter === 'save' ? 'active' : ''}`}
+                onClick={() => setActivityFilter('save')}
+              >
+                Saved
+              </button>
+            </div>
+            
+            {activityLoading ? (
+              <div className="loading">Loading your activity...</div>
+            ) : filterActivities(activities, activityFilter).length > 0 ? (
+              <div className="activity-list">
+                {filterActivities(activities, activityFilter).map((activity) => (
+                  <div key={activity.id} className="activity-item">
+                    <div className={`activity-icon ${activity.type}`}>
+                      {getActivityIcon(activity.type)}
+                    </div>
+                    <div className="activity-content">
+                      <div className="activity-header">
+                        <h3 className="activity-title">
+                          <span className="activity-recipe-link" onClick={() => handleRecipeClick({ recipeid: activity.recipe.id })}>
+                            {activity.recipe.name}
+                          </span>
+                        </h3>
+                        <span className="activity-date">{formatDate(activity.date)}</span>
+                      </div>
+                      <p className="activity-text">
+                        {getActivityText(activity)}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-activity">
+                <p>No activity found. Start interacting with recipes to see your activity here!</p>
+              </div>
+            )}
           </div>
         )}
         {activeTab === 'settings' && (
@@ -220,6 +537,13 @@ const UserAccount = () => {
           </div>
         )}
       </div>
+
+      {selectedRecipe && (
+        <RecipeModal
+          recipe={selectedRecipe}
+          onClose={() => setSelectedRecipe(null)}
+        />
+      )}
     </div>
   );
 };
