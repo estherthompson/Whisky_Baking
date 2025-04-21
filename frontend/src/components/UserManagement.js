@@ -159,7 +159,7 @@ const UserManagement = () => {
 
       {/* Users Dropdown Toggle */}
       <div className="users-dropdown-toggle first-dropdown" onClick={() => setShowUsersTable(!showUsersTable)}>
-        <h3>User Management {showUsersTable ? '▲' : '▼'}</h3>
+        <h3>User Profile Management {showUsersTable ? '▲' : '▼'}</h3>
       </div>
       
       {/* Users Table (Collapsible) */}

@@ -38,6 +38,16 @@ const UserAccount = () => {
   const [activityFilter, setActivityFilter] = useState('all');
   const [savedRecipes, setSavedRecipes] = useState([]);
   const [savedRecipesLoading, setSavedRecipesLoading] = useState(false);
+  const [profile, setProfile] = useState(null);
+  const [profileLoading, setProfileLoading] = useState(false);
+  const [formData, setFormData] = useState({
+    bio: '',
+    pronouns: '',
+    personalLinks: ''
+  });
+  const [formSubmitting, setFormSubmitting] = useState(false);
+  const [formSuccess, setFormSuccess] = useState(false);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -64,6 +74,13 @@ const UserAccount = () => {
     
     if (activeTab === 'saved' && user) {
       fetchSavedRecipes();
+    }
+  }, [activeTab]);
+
+  // Fetch user profile when the settings tab is active
+  useEffect(() => {
+    if (activeTab === 'settings' && user) {
+      fetchUserProfile();
     }
   }, [activeTab]);
 
@@ -254,6 +271,162 @@ const UserAccount = () => {
     }
   };
 
+  // Fetch user profile data
+  const fetchUserProfile = async () => {
+    if (!user) return;
+    
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      console.error("Cannot find user ID in user object:", user);
+      return;
+    }
+    
+    setProfileLoading(true);
+    
+    try {
+      const response = await axios.get(`http://localhost:5001/api/user/${userId}/profile`);
+      console.log('Profile data:', response.data);
+      setProfile(response.data);
+      
+      // Initialize form data with profile values
+      setFormData({
+        bio: response.data.bio || '',
+        pronouns: response.data.pronouns || '',
+        personalLinks: '' // You might want to handle multiple links differently
+      });
+      
+      // Set image preview if there's an image
+      if (response.data.imageurl) {
+        setImagePreview(response.data.imageurl);
+      }
+    } catch (error) {
+      if (error.response && error.response.status === 404) {
+        console.log('Profile not found, will create new one on save');
+      } else {
+        console.error('Error fetching user profile:', error);
+      }
+    } finally {
+      setProfileLoading(false);
+    }
+  };
+
+  // Handle profile form changes
+  const handleProfileChange = (e) => {
+    setFormData({
+      ...formData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  // Handle profile form submission
+  const handleProfileSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!user) return;
+    
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      setFormError('User ID not found');
+      return;
+    }
+    
+    setFormSubmitting(true);
+    setFormError('');
+    
+    try {
+      let response;
+      
+      // If profile exists, update it, otherwise create it
+      if (profile) {
+        response = await axios.put(`http://localhost:5001/api/user/${userId}/profile`, {
+          bio: formData.bio,
+          pronouns: formData.pronouns,
+          imageUrl: profile.imageurl // Keep the existing image URL
+        });
+      } else {
+        response = await axios.post('http://localhost:5001/api/profile', {
+          userId,
+          username: user.username,
+          bio: formData.bio,
+          pronouns: formData.pronouns
+        });
+      }
+      
+      console.log('Profile saved:', response.data);
+      setProfile(response.data);
+      setFormSuccess(true);
+      
+      // Reset success message after a delay
+      setTimeout(() => {
+        setFormSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Error saving profile:', error);
+      setFormError(error.response?.data?.error || 'Error saving profile');
+    } finally {
+      setFormSubmitting(false);
+    }
+  };
+
+  // Handle profile image upload
+  const handleImageUpload = async (file) => {
+    if (!user || !file) return;
+    
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      console.error("Cannot find user ID in user object:", user);
+      return;
+    }
+    
+    // Convert file to base64
+    const reader = new FileReader();
+    
+    reader.onloadend = async () => {
+      try {
+        const base64File = reader.result;
+        
+        const response = await axios.post(`http://localhost:5001/api/user/${userId}/profile/image`, {
+          file: base64File
+        });
+        
+        console.log('Image uploaded:', response.data);
+        
+        if (response.data.imageUrl) {
+          // Update profile with new image URL
+          setImagePreview(response.data.imageUrl);
+          
+          // If profile exists, update it with new image URL
+          if (profile) {
+            setProfile({
+              ...profile,
+              imageurl: response.data.imageUrl
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error uploading image:', error);
+        alert('Failed to upload image. Please try again.');
+      }
+    };
+    
+    reader.readAsDataURL(file);
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      // Show preview immediately
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setImagePreview(reader.result);
+      };
+      reader.readAsDataURL(file);
+      
+      // Upload image to server
+      handleImageUpload(file);
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -265,17 +438,6 @@ const UserAccount = () => {
     
     // Redirect to login page
     navigate('/login');
-  };
-
-  const handleImageChange = (e) => {
-    const file = e.target.files[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setImagePreview(reader.result);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const isAdmin = user.isadmin;
@@ -536,46 +698,67 @@ const UserAccount = () => {
             <div className="settings-sections">
               <div className="settings-section">
                 <h3>Profile Information</h3>
-                <form className="profile-form">
-                  <div className="form-group">
-                    <label htmlFor="profile_image">Profile Image</label>
-                    <div className="profile-image-container">
-                      <img 
-                        src={imagePreview} 
-                        alt="Profile" 
-                        className="profile-image-preview" 
+                {profileLoading ? (
+                  <div className="loading">Loading your profile...</div>
+                ) : (
+                  <form className="profile-form" onSubmit={handleProfileSubmit}>
+                    <div className="form-group">
+                      <label htmlFor="profile_image">Profile Image</label>
+                      <div className="profile-image-container">
+                        <img 
+                          src={imagePreview} 
+                          alt="Profile" 
+                          className="profile-image-preview" 
+                        />
+                      </div>
+                      <input 
+                        type="file" 
+                        id="profile_image" 
+                        name="profile_image" 
+                        accept="image/*" 
+                        onChange={handleImageChange}
                       />
                     </div>
-                    <input 
-                      type="file" 
-                      id="profile_image" 
-                      name="profile_image" 
-                      accept="image/*" 
-                      onChange={handleImageChange}
-                    />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="username">Username</label>
-                    <input type="text" id="username" name="username" value={user.username} readOnly />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="email">Email</label>
-                    <input type="email" id="email" name="email" value={user.email} readOnly />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="pronouns">Pronouns</label>
-                    <input type="text" id="pronouns" name="pronouns" placeholder="Enter your pronouns" />
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="bio">Bio</label>
-                    <textarea id="bio" name="bio" placeholder="Tell us about yourself"></textarea>
-                  </div>
-                  <div className="form-group">
-                    <label htmlFor="personal_links">Personal Links</label>
-                    <input type="url" id="personal_links" name="personal_links" placeholder="Enter your personal links" />
-                  </div>
-                  <button type="submit" className="save-btn">Save Changes</button>
-                </form>
+                    <div className="form-group">
+                      <label htmlFor="username">Username</label>
+                      <input type="text" id="username" name="username" value={user.username} readOnly />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="email">Email</label>
+                      <input type="email" id="email" name="email" value={user.email} readOnly />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="pronouns">Pronouns</label>
+                      <input 
+                        type="text" 
+                        id="pronouns" 
+                        name="pronouns" 
+                        placeholder="Enter your pronouns"
+                        value={formData.pronouns}
+                        onChange={handleProfileChange}
+                      />
+                    </div>
+                    <div className="form-group">
+                      <label htmlFor="bio">Bio</label>
+                      <textarea 
+                        id="bio" 
+                        name="bio" 
+                        placeholder="Tell us about yourself"
+                        value={formData.bio}
+                        onChange={handleProfileChange}
+                      ></textarea>
+                    </div>
+                    {formError && <div className="error-message">{formError}</div>}
+                    {formSuccess && <div className="success-message">Profile updated successfully!</div>}
+                    <button 
+                      type="submit" 
+                      className="save-btn"
+                      disabled={formSubmitting}
+                    >
+                      {formSubmitting ? 'Saving...' : 'Save Changes'}
+                    </button>
+                  </form>
+                )}
               </div>
               <div className="settings-section">
                 <h3>Notification Preferences</h3>

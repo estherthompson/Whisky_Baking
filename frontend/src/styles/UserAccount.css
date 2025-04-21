@@ -455,19 +455,21 @@
 }
 
 .error-message {
+  color: #d32f2f;
   background-color: #ffebee;
-  color: #c62828;
-  padding: 1rem;
+  padding: 8px 12px;
   border-radius: 4px;
-  margin-bottom: 1rem;
+  margin-bottom: 15px;
+  font-size: 14px;
 }
 
 .success-message {
+  color: #388e3c;
   background-color: #e8f5e9;
-  color: #2e7d32;
-  padding: 1rem;
+  padding: 8px 12px;
   border-radius: 4px;
-  margin-bottom: 1rem;
+  margin-bottom: 15px;
+  font-size: 14px;
 }
 
 .settings {
@@ -972,4 +974,32 @@
   .recipes-grid {
     grid-template-columns: 1fr;
   }
+}
+
+/* Profile form styles */
+.error-message {
+  color: #d32f2f;
+  background-color: #ffebee;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+.success-message {
+  color: #388e3c;
+  background-color: #e8f5e9;
+  padding: 8px 12px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  font-size: 14px;
+}
+
+button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}
+
+button:disabled:hover {
+  background-color: #cccccc;
 }
