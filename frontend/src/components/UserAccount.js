@@ -129,7 +129,43 @@ const UserAccount = () => {
         }
       }));
       
-      setActivities(realActivities);
+      // Add some mock recently viewed recipes data
+      // In a real app, this would be fetched from a backend API
+      const mockViewedRecipes = [
+        {
+          id: 'view-1',
+          type: 'viewed',
+          recipe: {
+            id: 1,
+            name: 'Chocolate Cake'
+          },
+          date: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
+          data: {}
+        },
+        {
+          id: 'view-2',
+          type: 'viewed',
+          recipe: {
+            id: 2,
+            name: 'Blueberry Muffins'
+          },
+          date: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
+          data: {}
+        },
+        {
+          id: 'view-3',
+          type: 'viewed',
+          recipe: {
+            id: 3,
+            name: 'Apple Pie'
+          },
+          date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
+          data: {}
+        }
+      ];
+      
+      // Combine the real ratings with the mock viewed recipes
+      setActivities([...realActivities, ...mockViewedRecipes]);
       setActivityLoading(false);
       
     } catch (error) {
@@ -164,6 +200,8 @@ const UserAccount = () => {
     switch (type) {
       case 'rating':
         return <FontAwesomeIcon icon={faStar} />;
+      case 'viewed':
+        return <FontAwesomeIcon icon={faHistory} />;
       case 'comment':
         return <FontAwesomeIcon icon={faComment} />;
       case 'creation':
@@ -449,16 +487,10 @@ const UserAccount = () => {
                 Ratings
               </button>
               <button 
-                className={`filter-button ${activityFilter === 'creation' ? 'active' : ''}`}
-                onClick={() => setActivityFilter('creation')}
+                className={`filter-button ${activityFilter === 'viewed' ? 'active' : ''}`}
+                onClick={() => setActivityFilter('viewed')}
               >
-                Creations
-              </button>
-              <button 
-                className={`filter-button ${activityFilter === 'save' ? 'active' : ''}`}
-                onClick={() => setActivityFilter('save')}
-              >
-                Saved
+                Recently Viewed
               </button>
             </div>
             
@@ -486,6 +518,9 @@ const UserAccount = () => {
                       <p className="activity-text">
                         {activity.type === 'rating' && 
                           `You rated ${activity.recipe?.name || activity.recipe_name} ${activity.data?.score || activity.rating} stars${activity.data?.review || activity.review ? `: "${activity.data?.review || activity.review}"` : ''}`
+                        }
+                        {activity.type === 'viewed' &&
+                          `You viewed ${activity.recipe?.name || activity.recipe_name}`
                         }
                         {activity.type === 'creation' && 
                           `You created a new recipe: ${activity.recipe?.name || activity.recipe_name}`
@@ -560,16 +595,6 @@ const UserAccount = () => {
                     <label htmlFor="email_notifications">Email Notifications</label>
                     <p className="description">Receive emails about new recipe comments, likes, and follows.</p>
                   </div>
-                  <div className="checkbox-group">
-                    <input type="checkbox" id="recipe_updates" name="recipe_updates" />
-                    <label htmlFor="recipe_updates">Recipe Updates</label>
-                    <p className="description">Get notified when recipes you've saved are updated.</p>
-                  </div>
-                  <div className="checkbox-group">
-                    <input type="checkbox" id="newsletter" name="newsletter" />
-                    <label htmlFor="newsletter">Weekly Newsletter</label>
-                    <p className="description">Receive our weekly newsletter with trending recipes and cooking tips.</p>
-                  </div>
                   <button type="submit" className="save-btn">Save Preferences</button>
                 </form>
               </div>
@@ -580,11 +605,6 @@ const UserAccount = () => {
                     <input type="checkbox" id="public_profile" name="public_profile" />
                     <label htmlFor="public_profile">Public Profile</label>
                     <p className="description">Allow other users to view your profile and recipes.</p>
-                  </div>
-                  <div className="checkbox-group">
-                    <input type="checkbox" id="show_activity" name="show_activity" />
-                    <label htmlFor="show_activity">Show Activity</label>
-                    <p className="description">Show your activity (likes, comments) to other users.</p>
                   </div>
                   <button type="submit" className="save-btn">Save Privacy Settings</button>
                 </form>
