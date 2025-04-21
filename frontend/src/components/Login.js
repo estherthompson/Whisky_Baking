@@ -17,14 +17,53 @@ const Login = () => {
   const [error, setError] = useState('');
   const [verificationSent, setVerificationSent] = useState(false);
   const navigate = useNavigate();
+  const [pendingReview, setPendingReview] = useState(null);
 
   useEffect(() => {
+    // Check if there's a pending review
+    const pendingReviewData = sessionStorage.getItem('pendingReview');
+    if (pendingReviewData) {
+      setPendingReview(JSON.parse(pendingReviewData));
+      console.log('Found pending review:', JSON.parse(pendingReviewData));
+    }
+    
     // Check if user is already logged in
     const user = localStorage.getItem('user');
     if (user) {
-      navigate('/user-account');
+      // Handle the redirection based on pending review
+      handlePostLoginRedirect(pendingReviewData);
     }
   }, [navigate]);
+
+  const handlePostLoginRedirect = (pendingReviewData) => {
+    if (pendingReviewData) {
+      const reviewData = JSON.parse(pendingReviewData);
+      console.log('Processing redirect for review of recipe:', reviewData.recipeId);
+      
+      // Clear the pending review from session storage
+      sessionStorage.removeItem('pendingReview');
+      
+      // Redirect to home page first (where the recipes are)
+      navigate('/');
+      
+      // Use a timeout to ensure navigation completes before trying to open the modal
+      setTimeout(() => {
+        console.log('Dispatching openRecipeModal event');
+        window.dispatchEvent(new CustomEvent('openRecipeModal', {
+          detail: { 
+            recipeId: reviewData.recipeId, 
+            showReviewForm: true,
+            reviewData: {
+              rating: reviewData.rating,
+              reviewText: reviewData.reviewText
+            }
+          }
+        }));
+      }, 500); // Increased timeout to ensure navigation completes
+    } else {
+      navigate('/user-account');
+    }
+  };
 
   const handleChange = (e) => {
     setFormData({
@@ -40,13 +79,23 @@ const Login = () => {
 
     try {
       if (isLogin) {
+        console.log('Attempting login with:', formData.identifier);
         const response = await axios.post('http://localhost:5001/api/auth/login', {
           identifier: formData.identifier,
           password: formData.password
         });
+        
+        // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(response.data));
-        navigate('/user-account');
+        console.log('Login successful, user stored in localStorage');
+        
+        // Get any pending review data again (in case it was updated)
+        const pendingReviewData = sessionStorage.getItem('pendingReview');
+        
+        // Handle the redirection
+        handlePostLoginRedirect(pendingReviewData);
       } else {
+        // Signup flow remains unchanged
         const signupData = {
           email: formData.email,
           password: formData.password,
@@ -81,6 +130,24 @@ const Login = () => {
 
   return (
     <div className="main-container">
+      <div className="login-welcome-banner">
+        {isLogin ? (
+          <>
+            <h3>Welcome Back!</h3>
+            <p>LOG IN TO ACCESS YOUR SAVED RECIPES AND PERSONAL REVIEWS</p>
+            {pendingReview && (
+              <div className="pending-review-note">
+                <small>You'll be returned to your review after login</small>
+              </div>
+            )}
+          </>
+        ) : (
+          <>
+            <h3>Join the Community!</h3>
+            <p>SIGN UP TO CREATE, SAVE, AND REVIEW YOUR FAVORITE RECIPES</p>
+          </>
+        )}
+      </div>
       <div className="white-box">
         <div className="login-container">
           <div className="login-form">

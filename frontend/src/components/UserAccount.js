@@ -455,14 +455,14 @@ const UserAccount = () => {
               <span className="text">Admin Dashboard</span>
             </button>
           )}
-          <button
+          <button 
             className={`tab ${activeTab === 'my-recipes' ? 'active' : ''}`}
             onClick={() => setActiveTab('my-recipes')}
           >
             <img src={recipeIcon} alt="My Recipes" className="icon" />
             <span className="text">My Recipes</span>
           </button>
-          <button
+          <button 
             className={`tab ${activeTab === 'saved' ? 'active' : ''}`}
             onClick={() => setActiveTab('saved')}
           >
@@ -470,15 +470,15 @@ const UserAccount = () => {
             <span className="text">Saved Recipes</span>
           </button>
           {!isAdmin && (
-            <button
+          <button 
               className={`tab ${activeTab === 'activity' ? 'active' : ''}`}
               onClick={() => setActiveTab('activity')}
-            >
+          >
               <img src={activityIcon} alt="Activity" className="icon" />
               <span className="text">Activity</span>
-            </button>
+          </button>
           )}
-          <button
+          <button 
             className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
             onClick={() => setActiveTab('settings')}
           >
@@ -637,14 +637,14 @@ const UserAccount = () => {
                 onClick={() => setActivityFilter('rating')}
               >
                 Ratings
-              </button>
-              <button 
+          </button>
+          <button 
                 className={`filter-button ${activityFilter === 'viewed' ? 'active' : ''}`}
                 onClick={() => setActivityFilter('viewed')}
-              >
+          >
                 Recently Viewed
-              </button>
-            </div>
+          </button>
+        </div>
             
             {activityLoading ? (
               <div className="loading">Loading your activity...</div>
@@ -791,8 +791,8 @@ const UserAccount = () => {
               </div>
             </div>
             <button className="logout-btn" onClick={handleLogout}>
-              Logout
-            </button>
+          Logout
+        </button>
           </div>
         )}
       </div>

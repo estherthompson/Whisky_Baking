@@ -3,6 +3,7 @@ import { useLocation } from 'react-router-dom';
 import Navbar from './Navbar.js';
 import '../styles/Layout.css';
 
+
 const Layout = ({ children }) => {
   const location = useLocation();
   const isHomePage = location.pathname === '/';

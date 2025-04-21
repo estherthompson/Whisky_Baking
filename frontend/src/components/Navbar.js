@@ -7,7 +7,8 @@ import {
   faUser
 } from '@fortawesome/free-solid-svg-icons';
 import '../styles/Navbar.css';
-import logo from '../assets/images/Whisky_Baking.png';
+import logo from '../assets/images/logo.png'
+import title from '../assets/images/title.png'
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -27,9 +28,16 @@ const Navbar = () => {
   return (
     <nav className="navbar">
       <div className="nav-container">
-        <Link to="/" className="nav-logo">
-          <img src={logo} alt="Whisky Baking Logo" style={{ height: '40px', width: 'auto' }} />
-        </Link>
+        <div className='bubble'>
+          <Link to="/" className="nav-logo">
+            <img src={logo} alt="Whisky Baking Logo" />
+
+          </Link>
+        </div>
+        <div className="nav-title">
+            <img src={title} alt="Whisky Baking Title" />
+        </div>
+
         <button className="mobile-menu-btn" onClick={toggleMenu}>
           {isMenuOpen ? '✕' : '☰'}
         </button>

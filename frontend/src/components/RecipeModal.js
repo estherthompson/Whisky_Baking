@@ -14,13 +14,13 @@ import {
 import savedIcon from '../assets/icons/saved_home.png';
 import axios from 'axios';
 
-const RecipeModal = ({ recipe, onClose }) => {
+const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false }) => {
   const navigate = useNavigate();
   const [saveMessage, setSaveMessage] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(false);
-  const [reviewText, setReviewText] = useState('');
-  const [rating, setRating] = useState(0);
+  const [showReviewForm, setShowReviewForm] = useState(initialShowReviewForm);
+  const [reviewText, setReviewText] = useState(recipe?._reviewData?.reviewText || '');
+  const [rating, setRating] = useState(recipe?._reviewData?.rating || 0);
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState(null);
@@ -214,11 +214,16 @@ const RecipeModal = ({ recipe, onClose }) => {
       const userString = localStorage.getItem('user');
       
       if (!userString) {
-        setReviewMessage({
-          type: 'error',
-          text: 'You need to log in through User Account to submit a review'
-        });
-        setIsSubmittingReview(false);
+        // Save the current recipe and review info to sessionStorage before redirecting
+        sessionStorage.setItem('pendingReview', JSON.stringify({
+          recipeId: recipe.recipeid,
+          recipeName: recipe.name,
+          rating: rating,
+          reviewText: reviewText
+        }));
+        
+        // Redirect to login page
+        navigate('/login');
         return;
       }
       
@@ -329,6 +334,18 @@ const RecipeModal = ({ recipe, onClose }) => {
       console.error('Error parsing user data:', error);
     }
   }, []);
+
+  // Use an effect to handle changes to initialShowReviewForm
+  useEffect(() => {
+    setShowReviewForm(initialShowReviewForm);
+    
+    // Restore review data if present
+    if (recipe?._reviewData) {
+      console.log('Restoring saved review data:', recipe._reviewData);
+      setReviewText(recipe._reviewData.reviewText || '');
+      setRating(recipe._reviewData.rating || 0);
+    }
+  }, [initialShowReviewForm, recipe]);
 
   if (!recipe) return null;
 
