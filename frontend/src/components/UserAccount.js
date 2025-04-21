@@ -36,6 +36,8 @@ const UserAccount = () => {
   const [activities, setActivities] = useState([]);
   const [activityLoading, setActivityLoading] = useState(false);
   const [activityFilter, setActivityFilter] = useState('all');
+  const [savedRecipes, setSavedRecipes] = useState([]);
+  const [savedRecipesLoading, setSavedRecipesLoading] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -219,6 +221,40 @@ const UserAccount = () => {
     }
   };
 
+  const fetchSavedRecipes = async () => {
+    if (!user) return;
+    
+    // Use the same approach as fetchUserRecipes
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      console.error("Cannot find user ID in user object:", user);
+      return;
+    }
+    
+    console.log("Fetching saved recipes for user ID:", userId);
+    setSavedRecipesLoading(true);
+    
+    try {
+      const response = await axios.get(`http://localhost:5001/api/user/${userId}/saved-recipes`);
+      console.log('Saved recipes:', response.data);
+      setSavedRecipes(response.data.recipes || []);
+    } catch (error) {
+      console.error('Error fetching saved recipes:', error);
+    } finally {
+      setSavedRecipesLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === 'recipes') {
+      fetchUserRecipes();
+    } else if (activeTab === 'activity') {
+      fetchUserActivities();
+    } else if (activeTab === 'saved') {
+      fetchSavedRecipes();
+    }
+  }, [activeTab]);
+
   if (!user) {
     return null;
   }
@@ -366,7 +402,64 @@ const UserAccount = () => {
         {!isAdmin && activeTab === 'saved' && (
           <div className="saved-recipes">
             <h2>Saved Recipes</h2>
-            {/* Saved Recipes content will go here */}
+            {savedRecipesLoading ? (
+              <div className="loading">Loading your saved recipes...</div>
+            ) : savedRecipes.length > 0 ? (
+              <div className="recipe-grid">
+                {savedRecipes.map((recipe) => (
+                  <div 
+                    key={recipe.recipeid} 
+                    className="recipe-card"
+                    onClick={() => handleRecipeClick(recipe)}
+                    style={{ cursor: 'pointer' }}
+                    role="button"
+                    tabIndex={0}
+                    onKeyPress={(e) => {
+                      if (e.key === 'Enter') {
+                        handleRecipeClick(recipe);
+                      }
+                    }}
+                  >
+                    <div className="recipe-image">
+                      {recipe.image_url ? (
+                        <img 
+                          src={recipe.image_url} 
+                          alt={recipe.name}
+                          onError={(e) => {
+                            console.log('Image failed to load:', recipe.image_url);
+                            e.target.onerror = null;
+                            e.target.src = '/placeholder-recipe.jpg';
+                          }}
+                        />
+                      ) : (
+                        <div className="recipe-icon">
+                          <FontAwesomeIcon icon={faUtensils} size="3x" />
+                        </div>
+                      )}
+                    </div>
+                    <div className="recipe-info">
+                      <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>
+                      <div className="recipe-meta">
+                        <span className="prep-time">
+                          <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
+                        </span>
+                        <span className="saved-date">
+                          <FontAwesomeIcon icon={faBookmark} /> {recipe.dateSaved ? new Date(recipe.dateSaved).toLocaleDateString() : 'N/A'}
+                        </span>
+                      </div>
+                      <p className="recipe-description">{recipe.description?.substring(0, 100) || 'No description available'}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <div className="no-recipes">
+                <p>You haven't saved any recipes yet.</p>
+                <button className="create-recipe-btn" onClick={() => navigate('/')}>
+                  Explore Recipes
+                </button>
+              </div>
+            )}
           </div>
         )}
         {!isAdmin && activeTab === 'activity' && (

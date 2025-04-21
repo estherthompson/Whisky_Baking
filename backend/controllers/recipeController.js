@@ -199,7 +199,8 @@ export const createRecipe = async (req, res) => {
 
 export const savedRecipe = async (req, res) => {
     try {
-        const { userId, recipeId } = req.body;
+        const { userId, recipeId, dateSaved } = req.body;
+        console.log('Received save recipe request:', req.body);
 
         if (!userId || !recipeId) {
             return res.status(400).json({
@@ -229,13 +230,18 @@ export const savedRecipe = async (req, res) => {
             });
         }
 
-        const { error: savedError } = await supabase
+        // Use the provided dateSaved or generate a new timestamp
+        const dateToSave = dateSaved || new Date().toISOString();
+        console.log('Saving recipe with date:', dateToSave);
+
+        const { data: savedData, error: savedError } = await supabase
             .from('saved_recipes')
             .insert([{
                 userid: userId,
                 recipeid: recipeId,
-                datesaved: new Date().toISOString()
-            }]);
+                datesaved: dateToSave
+            }])
+            .select();
 
         if (savedError) {
             console.error('Error saving recipe:', savedError);
@@ -245,8 +251,10 @@ export const savedRecipe = async (req, res) => {
             });
         }
 
+        console.log('Successfully saved recipe:', savedData);
         res.status(201).json({
-            message: 'Recipe saved successfully'
+            message: 'Recipe saved successfully',
+            data: savedData
         });
     } catch (error) {
         console.error('Server error:', error);
@@ -555,6 +563,66 @@ export const debugGetUserRecipes = async (req, res) => {
         console.error('Debug query error:', error);
         res.status(500).json({
             error: 'Debug query failed',
+            details: error.message
+        });
+    }
+};
+
+// Function to get all saved recipes for a specific user
+export const getSavedRecipes = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        console.log('Getting saved recipes for userId:', userId);
+        
+        if (!userId) {
+            return res.status(400).json({
+                error: 'User ID is required'
+            });
+        }
+
+        // Convert userId to number for consistency
+        const userIdNum = parseInt(userId, 10);
+        
+        // Join saved_recipes with recipe table to get full recipe details
+        const { data: savedRecipes, error } = await supabase
+            .from('saved_recipes')
+            .select(`
+                recipeid,
+                datesaved,
+                recipe:recipeid (
+                    recipeid,
+                    name,
+                    description,
+                    instructions,
+                    recipetime,
+                    userid
+                )
+            `)
+            .eq('userid', userIdNum)
+            .order('datesaved', { ascending: false });
+            
+        if (error) {
+            console.error('Error fetching saved recipes:', error);
+            return res.status(400).json({
+                error: 'Failed to fetch saved recipes',
+                details: error.message
+            });
+        }
+
+        // Format the response to be more client-friendly
+        const formattedRecipes = savedRecipes.map(item => ({
+            ...item.recipe,
+            dateSaved: item.datesaved
+        }));
+        
+        res.status(200).json({
+            count: formattedRecipes.length,
+            recipes: formattedRecipes
+        });
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({
+            error: 'An unexpected error occurred',
             details: error.message
         });
     }
