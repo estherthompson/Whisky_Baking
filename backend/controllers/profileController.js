@@ -162,11 +162,21 @@ export const uploadProfileImage = async (req, res) => {
             return res.status(500).json({ error: 'Failed to upload image' });
         }
 
-        // Get public URL
-        const { publicURL } = supabase
+        // Get public URL - fixed to work with newer Supabase versions
+        const publicUrlData = supabase
             .storage
             .from('profile-photos')
             .getPublicUrl(filePath);
+        
+        // Extract the URL from the object (depending on Supabase version)
+        const publicURL = publicUrlData.data?.publicUrl || publicUrlData.publicURL;
+        
+        console.log('Generated public URL:', publicURL);
+
+        if (!publicURL) {
+            console.error('Failed to generate public URL');
+            return res.status(500).json({ error: 'Failed to generate public URL for image' });
+        }
 
         // Update profile with new image URL
         const { error: updateError } = await supabase
