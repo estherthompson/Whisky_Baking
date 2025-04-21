@@ -69,6 +69,9 @@ const Home = () => {
               ingredientid
             ),
             quantity
+          ),
+          rating (
+            score
           )
         `);
 
@@ -103,14 +106,24 @@ const Home = () => {
             );
           });
 
-      // Format the recipes with their ingredients
-      const formattedRecipes = filteredRecipes.map(recipe => ({
-        ...recipe,
-        ingredients: recipe.recipe_ingredient?.map(ri => ({
-          name: ri.ingredient.name,
-          quantity: ri.quantity
-        })) || []
-      }));
+      // Format the recipes with their ingredients and average rating
+      const formattedRecipes = filteredRecipes.map(recipe => {
+        // Calculate average rating
+        let averageRating = 0;
+        if (recipe.rating && recipe.rating.length > 0) {
+          const totalRating = recipe.rating.reduce((sum, r) => sum + r.score, 0);
+          averageRating = totalRating / recipe.rating.length;
+        }
+
+        return {
+          ...recipe,
+          ingredients: recipe.recipe_ingredient?.map(ri => ({
+            name: ri.ingredient.name,
+            quantity: ri.quantity
+          })) || [],
+          averageRating
+        };
+      });
 
       setRecipes(formattedRecipes);
     } catch (error) {
@@ -288,7 +301,7 @@ const Home = () => {
                       <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
                     </span>
                     <span className="rating">
-                      <FontAwesomeIcon icon={faStar} /> {recipe.average_rating || 'N/A'}
+                      <FontAwesomeIcon icon={faStar} /> {recipe.averageRating?.toFixed(1) || 'N/A'}
                     </span>
                   </div>
                   <p className="recipe-description">{recipe.description || 'No description available'}</p>

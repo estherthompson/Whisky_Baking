@@ -411,8 +411,8 @@ export const getAllRecipes = async (req, res) => {
                 description: recipe.description,
                 recipetime: recipe.recipetime,
                 image_url: recipe.image_url,
-                rating: avgRating,
-                userid: recipe.userid, // Include the userid in the response
+                averageRating: avgRating,
+                userid: recipe.userid,
                 dietary_restrictions: recipe.recipe_ingredient 
                     ? [...new Set(
                         recipe.recipe_ingredient
