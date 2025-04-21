@@ -2,7 +2,15 @@ import React, { useEffect, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import '../styles/RecipeModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faClock, faStar, faUtensils, faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
+import { 
+  faTimes, 
+  faClock, 
+  faStar, 
+  faUtensils, 
+  faCheck, 
+  faSave, 
+  faPaperPlane 
+} from '@fortawesome/free-solid-svg-icons';
 import savedIcon from '../assets/icons/saved_home.png';
 import axios from 'axios';
 
@@ -10,6 +18,12 @@ const RecipeModal = ({ recipe, onClose }) => {
   const navigate = useNavigate();
   const [saveMessage, setSaveMessage] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewText, setReviewText] = useState('');
+  const [rating, setRating] = useState(0);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+  const [reviewMessage, setReviewMessage] = useState(null);
   
   const handleEscapeKey = useCallback((event) => {
     if (event.key === 'Escape') {
@@ -46,7 +60,7 @@ const RecipeModal = ({ recipe, onClose }) => {
         console.error('No user data in localStorage');
         setSaveMessage({
           type: 'error',
-          text: 'You need to log in to save recipes'
+          text: 'You need to log in through User Account to save a recipe'
         });
         setTimeout(() => setSaveMessage(null), 5000);
         setIsSaving(false);
@@ -162,6 +176,123 @@ const RecipeModal = ({ recipe, onClose }) => {
         style={{ color: index < score ? '#FFD700' : '#DDD' }}
       />
     ));
+  };
+
+  const renderInteractiveStars = () => {
+    return [...Array(5)].map((_, index) => (
+      <FontAwesomeIcon
+        key={index}
+        icon={faStar}
+        style={{ 
+          color: index < (hoverRating || rating) ? '#FFD700' : '#DDD',
+          cursor: 'pointer',
+          fontSize: '1.5rem',
+          marginRight: '5px'
+        }}
+        onClick={() => setRating(index + 1)}
+        onMouseEnter={() => setHoverRating(index + 1)}
+        onMouseLeave={() => setHoverRating(0)}
+      />
+    ));
+  };
+
+  const handleSubmitReview = async (e) => {
+    e.preventDefault();
+    
+    if (rating === 0) {
+      setReviewMessage({
+        type: 'error',
+        text: 'Please select a rating'
+      });
+      return;
+    }
+    
+    setIsSubmittingReview(true);
+    
+    try {
+      // Get user from localStorage
+      const userString = localStorage.getItem('user');
+      
+      if (!userString) {
+        setReviewMessage({
+          type: 'error',
+          text: 'You need to log in through User Account to submit a review'
+        });
+        setIsSubmittingReview(false);
+        return;
+      }
+      
+      const user = JSON.parse(userString);
+      
+      // Check for user ID using the same approach as in handleSaveClick
+      const possibleIdProps = ['UserID', 'userid', 'userId', 'user_id', 'id', 'ID'];
+      let userId = null;
+      
+      for (const prop of possibleIdProps) {
+        if (user[prop] !== undefined) {
+          userId = user[prop];
+          break;
+        }
+      }
+      
+      if (!userId) {
+        const idProps = Object.keys(user).filter(key => 
+          key.toLowerCase().includes('id') && user[key]
+        );
+        
+        if (idProps.length > 0) {
+          userId = user[idProps[0]];
+        }
+      }
+      
+      if (!userId) {
+        setReviewMessage({
+          type: 'error',
+          text: 'Unable to identify your account. Please log out and log in again.'
+        });
+        setIsSubmittingReview(false);
+        return;
+      }
+      
+      // Prepare the review data
+      const reviewData = {
+        userId: userId,
+        recipeId: recipe.recipeid,
+        score: rating,
+        reviewText: reviewText,
+        datePosted: new Date().toISOString()
+      };
+      
+      // Submit the review
+      const response = await axios.post('http://localhost:5001/api/recipes/rating', reviewData);
+      
+      setReviewMessage({
+        type: 'success',
+        text: 'Your review has been submitted!'
+      });
+      
+      // Clear form
+      setRating(0);
+      setReviewText('');
+      setShowReviewForm(false);
+      
+      // Refresh recipe data to show the new review
+      // This would require an API call to get updated recipe data
+      // or we could update it locally
+      
+      // Clear message after 5 seconds
+      setTimeout(() => setReviewMessage(null), 5000);
+      
+    } catch (error) {
+      console.error('Error submitting review:', error);
+      
+      setReviewMessage({
+        type: 'error',
+        text: error.response?.data?.error || 'Failed to submit review. Please try again later.'
+      });
+    } finally {
+      setIsSubmittingReview(false);
+    }
   };
 
   // Update the debug useEffect
@@ -286,6 +417,70 @@ const RecipeModal = ({ recipe, onClose }) => {
 
           <div className="recipe-reviews">
             <h3>Ratings and Reviews</h3>
+            
+            {reviewMessage && (
+              <div className={`review-message ${reviewMessage.type}`}>
+                {reviewMessage.type === 'success' && <FontAwesomeIcon icon={faCheck} />}
+                <span>{reviewMessage.text}</span>
+              </div>
+            )}
+            
+            {!showReviewForm ? (
+              <div className="add-review-section">
+                <button 
+                  className="add-review-button"
+                  onClick={() => setShowReviewForm(true)}
+                >
+                  Write a Review
+                </button>
+              </div>
+            ) : (
+              <div className="review-form-container">
+                <form onSubmit={handleSubmitReview} className="review-form">
+                  <div className="rating-input">
+                    <label>Your Rating:</label>
+                    <div className="stars-container">
+                      {renderInteractiveStars()}
+                    </div>
+                  </div>
+                  
+                  <div className="review-input">
+                    <label htmlFor="reviewText">Your Review:</label>
+                    <textarea
+                      id="reviewText"
+                      name="reviewText"
+                      value={reviewText}
+                      onChange={(e) => setReviewText(e.target.value)}
+                      placeholder="Share your experience with this recipe..."
+                      rows={4}
+                    />
+                  </div>
+                  
+                  <div className="review-form-actions">
+                    <button 
+                      type="button" 
+                      className="cancel-button"
+                      onClick={() => {
+                        setShowReviewForm(false);
+                        setRating(0);
+                        setReviewText('');
+                      }}
+                    >
+                      Cancel
+                    </button>
+                    <button 
+                      type="submit" 
+                      className="submit-button"
+                      disabled={isSubmittingReview}
+                    >
+                      {isSubmittingReview ? 'Submitting...' : 'Submit Review'}
+                      {!isSubmittingReview && <FontAwesomeIcon icon={faPaperPlane} />}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
+            
             {recipe.ratings && recipe.ratings.length > 0 ? (
               <div className="reviews-list">
                 {recipe.ratings.map((review) => (

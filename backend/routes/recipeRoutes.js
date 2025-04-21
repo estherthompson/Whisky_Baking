@@ -1,5 +1,6 @@
 import express from 'express';
 import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, debugGetUserRecipes, getSavedRecipes, getUserRatings } from '../controllers/recipeController.js';
+import { createRating } from '../controllers/ratingController.js';
 
 const router = express.Router();
 
@@ -26,7 +27,8 @@ router.get('/user/:userId/ratings', getUserRatings);
 // Debug route for direct testing
 router.get('/debug/user/:userId/recipes', debugGetUserRecipes);
 
-// Rating route - nested under recipes since ratings depend on recipes
+// Rating routes
 router.post('/recipes/:recipeid/ratings', addRatingToRecipe);
+router.post('/recipes/rating', createRating);
 
 export default router; 

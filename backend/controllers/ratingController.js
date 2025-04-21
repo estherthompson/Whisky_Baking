@@ -46,23 +46,31 @@ export const getRatings = async (req, res) => {
 // Create a new rating
 export const createRating = async (req, res) => {
     try {
+        // Extract data from request body with frontend format
         const {
-            recipeid,
-            userid,
+            userId,
+            recipeId,
             score,
-            reviewtext
+            reviewText,
+            datePosted
         } = req.body;
 
+        console.log('Received review data:', req.body);
+
+        // Map to database field names
+        const recipeid = recipeId;
+        const userid = userId;
+        const reviewtext = reviewText;
+
         // Validate required fields
-        if (!recipeid || !userid || !score || !reviewtext) {
+        if (!recipeid || !userid || !score) {
             const missingFields = [];
-            if (!recipeid) missingFields.push('recipeid');
-            if (!userid) missingFields.push('userid');
+            if (!recipeid) missingFields.push('recipeId');
+            if (!userid) missingFields.push('userId');
             if (!score) missingFields.push('score');
-            if (!reviewtext) missingFields.push('reviewtext');
 
             return res.status(400).json({
-                error: 'All fields are required',
+                error: 'Required fields are missing',
                 missingFields
             });
         }
@@ -82,21 +90,39 @@ export const createRating = async (req, res) => {
             .eq('userid', userid)
             .single();
 
+        if (checkError && checkError.code !== 'PGRST116') {
+            // Error other than "no rows returned"
+            console.error('Error checking existing rating:', checkError);
+            return res.status(500).json({
+                error: 'Failed to check existing rating',
+                details: checkError.message
+            });
+        }
+
         if (existingRating) {
             return res.status(400).json({
-                error: 'User has already rated this recipe'
+                error: 'You have already reviewed this recipe'
             });
         }
 
         // Get the last rating ID
-        const { data: lastRating } = await supabase
+        const { data: lastRating, error: countError } = await supabase
             .from('rating')
             .select('ratingid')
             .order('ratingid', { ascending: false })
             .limit(1)
             .single();
 
+        if (countError && countError.code !== 'PGRST116') {
+            console.error('Error getting last rating ID:', countError);
+        }
+
         const nextRatingId = lastRating ? lastRating.ratingid + 1 : 1;
+
+        // Format date for PostgreSQL
+        const formattedDate = datePosted ? 
+            new Date(datePosted).toISOString().split('T')[0] : 
+            new Date().toISOString().split('T')[0];
 
         // Insert the new rating
         const { data: rating, error } = await supabase
@@ -107,8 +133,8 @@ export const createRating = async (req, res) => {
                     recipeid,
                     userid,
                     score,
-                    dateposted: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
-                    reviewtext
+                    dateposted: formattedDate,
+                    reviewtext: reviewtext || ''
                 }
             ])
             .select()
@@ -122,8 +148,11 @@ export const createRating = async (req, res) => {
             });
         }
 
+        // Update recipe average rating
+        await updateRecipeAverageRating(recipeid);
+
         res.status(201).json({
-            message: 'Rating created successfully',
+            message: 'Review submitted successfully',
             rating
         });
 
@@ -134,4 +163,40 @@ export const createRating = async (req, res) => {
             details: error.message
         });
     }
-}; 
+};
+
+// Helper function to update a recipe's average rating
+async function updateRecipeAverageRating(recipeid) {
+    try {
+        // Get all ratings for the recipe
+        const { data: ratings, error: ratingsError } = await supabase
+            .from('rating')
+            .select('score')
+            .eq('recipeid', recipeid);
+
+        if (ratingsError) {
+            console.error('Error fetching ratings for average calculation:', ratingsError);
+            return;
+        }
+
+        if (!ratings || ratings.length === 0) {
+            return; // No ratings to calculate average
+        }
+
+        // Calculate average
+        const sum = ratings.reduce((total, rating) => total + rating.score, 0);
+        const average = sum / ratings.length;
+
+        // Update recipe with new average rating
+        const { error: updateError } = await supabase
+            .from('recipe')
+            .update({ average_rating: average.toFixed(1) })
+            .eq('recipeid', recipeid);
+
+        if (updateError) {
+            console.error('Error updating recipe average rating:', updateError);
+        }
+    } catch (error) {
+        console.error('Error in updateRecipeAverageRating:', error);
+    }
+} 
