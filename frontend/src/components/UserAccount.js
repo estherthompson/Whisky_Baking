@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/UserAccount.css';
 import adminIcon from '../assets/icons/admin.svg';
@@ -23,8 +23,11 @@ import RecipeModal from './RecipeModal';
 
 const UserAccount = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const user = JSON.parse(localStorage.getItem('user'));
-  const [activeTab, setActiveTab] = useState('my-recipes'); // Default to my-recipes
+  
+  // Use activeTab from location state if provided, otherwise default to 'my-recipes'
+  const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'my-recipes');
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [imagePreview, setImagePreview] = useState(user?.profileImage || defaultProfileImage);
   const [myRecipes, setMyRecipes] = useState([]);
@@ -105,11 +108,7 @@ const UserAccount = () => {
     setActivityLoading(true);
     
     try {
-      // For now, we'll create mock activity data since we don't have this endpoint yet
-      // In a real implementation, you would call an API endpoint like:
-      // const response = await axios.get(`http://localhost:5001/api/user/${userId}/activities`);
       
-      // Mock data - this would come from your backend in a real implementation
       const mockActivities = [
         {
           id: 1,

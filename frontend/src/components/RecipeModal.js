@@ -1,9 +1,16 @@
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect, useCallback, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import '../styles/RecipeModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faClock, faStar, faUtensils } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faClock, faStar, faUtensils, faCheck, faSave } from '@fortawesome/free-solid-svg-icons';
+import savedIcon from '../assets/icons/saved_home.png';
+import axios from 'axios';
 
 const RecipeModal = ({ recipe, onClose }) => {
+  const navigate = useNavigate();
+  const [saveMessage, setSaveMessage] = useState(null);
+  const [isSaving, setIsSaving] = useState(false);
+  
   const handleEscapeKey = useCallback((event) => {
     if (event.key === 'Escape') {
       onClose();
@@ -26,6 +33,127 @@ const RecipeModal = ({ recipe, onClose }) => {
     }
   };
 
+  const handleSaveClick = async () => {
+    // Add visual feedback that the button was clicked
+    setIsSaving(true);
+    
+    try {
+      // Get user from localStorage and check authentication more thoroughly
+      const userString = localStorage.getItem('user');
+      console.log('Raw user string:', userString);
+      
+      if (!userString) {
+        console.error('No user data in localStorage');
+        setSaveMessage({
+          type: 'error',
+          text: 'You need to log in to save recipes'
+        });
+        setTimeout(() => setSaveMessage(null), 5000);
+        setIsSaving(false);
+        return;
+      }
+      
+      const user = JSON.parse(userString);
+      console.log('Parsed user data:', user);
+      console.log('User object keys:', Object.keys(user));
+      
+      // Check for empty user object
+      if (!user || Object.keys(user).length === 0) {
+        console.error('Empty user object');
+        setSaveMessage({
+          type: 'error',
+          text: 'You need to log in to save recipes'
+        });
+        setTimeout(() => setSaveMessage(null), 5000);
+        setIsSaving(false);
+        return;
+      }
+      
+      // Check all possible ID properties
+      // Try each possible property name for user ID
+      const possibleIdProps = ['UserID', 'userid', 'userId', 'user_id', 'id', 'ID'];
+      let userId = null;
+      
+      for (const prop of possibleIdProps) {
+        if (user[prop] !== undefined) {
+          userId = user[prop];
+          console.log(`Found user ID in property: ${prop}`, userId);
+          break;
+        }
+      }
+      
+      // If we still don't have a userId, look for any property with "id" in the name
+      if (!userId) {
+        const idProps = Object.keys(user).filter(key => 
+          key.toLowerCase().includes('id') && user[key]
+        );
+        
+        if (idProps.length > 0) {
+          userId = user[idProps[0]];
+          console.log(`Found potential ID in property: ${idProps[0]}`, userId);
+        }
+      }
+      
+      if (!userId) {
+        console.error('Could not find any user ID property in:', user);
+        setSaveMessage({
+          type: 'error',
+          text: 'Unable to identify your account. Please log out and log in again.'
+        });
+        setTimeout(() => setSaveMessage(null), 5000);
+        setIsSaving(false);
+        return;
+      }
+      
+      // Prepare the data for saving to saved_recipes table
+      const savedRecipeData = {
+        userId: userId,
+        recipeId: recipe.recipeid,
+        datesaved: new Date().toISOString() // Current timestamp in ISO format
+      };
+      
+      console.log('Saving recipe with data:', savedRecipeData);
+      
+      // Save the recipe using the API
+      const response = await axios.post('http://localhost:5001/api/recipes/save', savedRecipeData);
+      
+      console.log('Save recipe API response:', response.data);
+      
+      // Show success message
+      setSaveMessage({
+        type: 'success',
+        text: 'Recipe saved! You can find it in your account under Saved Recipes.'
+      });
+      
+      // Clear message after 5 seconds
+      setTimeout(() => setSaveMessage(null), 5000);
+      
+    } catch (error) {
+      console.error('Error details:', error);
+      
+      // Check for duplicate save error
+      if (error.response && error.response.status === 400 && 
+          error.response.data && error.response.data.error === 'Recipe is already saved by this user') {
+        setSaveMessage({
+          type: 'info',
+          text: 'This recipe is already saved in your account.'
+        });
+      } else {
+        // Show general error message
+        setSaveMessage({
+          type: 'error',
+          text: 'Failed to save recipe. Please try again later.'
+        });
+      }
+      
+      // Clear message after 5 seconds
+      setTimeout(() => setSaveMessage(null), 5000);
+    } finally {
+      // Reset saving state after a short delay for visual feedback
+      setTimeout(() => setIsSaving(false), 500);
+    }
+  };
+
   const renderStars = (score) => {
     return [...Array(5)].map((_, index) => (
       <FontAwesomeIcon
@@ -36,14 +164,67 @@ const RecipeModal = ({ recipe, onClose }) => {
     ));
   };
 
+  // Update the debug useEffect
+  useEffect(() => {
+    // Debug authentication state when component mounts
+    try {
+      const user = localStorage.getItem('user');
+      console.log('localStorage user string:', user);
+      
+      if (user) {
+        const parsedUser = JSON.parse(user);
+        console.log('Parsed user object:', parsedUser);
+        console.log('Available keys in user object:', Object.keys(parsedUser));
+        
+        // Check all possible ID properties and their types
+        console.log('User ID check:', {
+          UserID: parsedUser.UserID,
+          userid: parsedUser.userid,
+          userId: parsedUser.userId,
+          user_id: parsedUser.user_id,
+          id: parsedUser.id,
+          types: {
+            UserID: typeof parsedUser.UserID,
+            userid: typeof parsedUser.userid,
+            userId: typeof parsedUser.userId,
+            user_id: typeof parsedUser.user_id,
+            id: typeof parsedUser.id
+          }
+        });
+      } else {
+        console.log('No user found in localStorage');
+      }
+    } catch (error) {
+      console.error('Error parsing user data:', error);
+    }
+  }, []);
+
   if (!recipe) return null;
 
   return (
     <div className="modal-overlay" onClick={handleOverlayClick}>
       <div className="modal-content" role="dialog" aria-modal="true">
-        <button className="close-button" onClick={onClose} aria-label="Close modal">
-          <FontAwesomeIcon icon={faTimes} />
-        </button>
+        <div className="modal-actions">
+          <button 
+            className={`save-recipe-button ${isSaving ? 'saving' : ''}`} 
+            onClick={handleSaveClick} 
+            aria-label="Save recipe"
+            disabled={isSaving}
+          >
+            <img src={savedIcon} alt="Save Recipe" />
+          </button>
+          <button className="close-button" onClick={onClose} aria-label="Close modal">
+            <FontAwesomeIcon icon={faTimes} />
+          </button>
+        </div>
+
+        {saveMessage && (
+          <div className={`save-message ${saveMessage.type}`}>
+            {saveMessage.type === 'success' && <FontAwesomeIcon icon={faCheck} />}
+            {saveMessage.type === 'info' && <FontAwesomeIcon icon={faSave} />}
+            <span>{saveMessage.text}</span>
+          </div>
+        )}
 
         <div className="modal-left">
           <div className="modal-image">
