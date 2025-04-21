@@ -110,65 +110,34 @@ const UserAccount = () => {
     setActivityLoading(true);
     
     try {
+      // Fetch real ratings data from the API
+      const response = await axios.get(`http://localhost:5001/api/user/${userId}/ratings`);
+      console.log('User ratings:', response.data);
       
-      const mockActivities = [
-        {
-          id: 1,
-          type: 'rating',
-          recipe: {
-            id: 6,
-            name: 'Walnut Brownies'
-          },
-          date: '2023-12-01T15:30:00',
-          data: {
-            score: 4.5,
-            review: 'These brownies were delicious! The walnuts added a perfect crunch.'
-          }
+      // Transform the ratings data to match our activity format
+      const realActivities = response.data.map(rating => ({
+        id: rating.id || rating.rating_id,
+        type: 'rating',
+        recipe: {
+          id: rating.recipe_id || rating.recipeid,
+          name: rating.recipe_name || 'Unknown Recipe'
         },
-        {
-          id: 2,
-          type: 'creation',
-          recipe: {
-            id: 6,
-            name: 'Walnut Brownies'
-          },
-          date: '2023-11-29T10:15:00',
-          data: {
-            description: 'Fudgy brownies with crunchy walnuts for added texture and flavor.'
-          }
-        },
-        {
-          id: 3,
-          type: 'save',
-          recipe: {
-            id: 5,
-            name: 'Chocolate Chip Cookies'
-          },
-          date: '2023-11-28T18:20:00',
-          data: {}
-        },
-        {
-          id: 4,
-          type: 'comment',
-          recipe: {
-            id: 4,
-            name: 'Vanilla Cake'
-          },
-          date: '2023-11-25T14:10:00',
-          data: {
-            comment: 'I tried this recipe with almond extract instead of vanilla and it was amazing!'
-          }
+        date: rating.created_at || rating.date || new Date().toISOString(),
+        data: {
+          score: rating.rating || rating.score || 0,
+          review: rating.review || rating.comment || ''
         }
-      ];
+      }));
       
-      setTimeout(() => {
-        setActivities(mockActivities);
-        setActivityLoading(false);
-      }, 500); // Simulate network delay
+      setActivities(realActivities);
+      setActivityLoading(false);
       
     } catch (error) {
-      console.error('Error fetching user activities:', error);
+      console.error('Error fetching user ratings:', error);
       setActivityLoading(false);
+      
+      // Fallback to empty array if the API call fails
+      setActivities([]);
     }
   };
 
@@ -480,12 +449,6 @@ const UserAccount = () => {
                 Ratings
               </button>
               <button 
-                className={`filter-button ${activityFilter === 'comment' ? 'active' : ''}`}
-                onClick={() => setActivityFilter('comment')}
-              >
-                Comments
-              </button>
-              <button 
                 className={`filter-button ${activityFilter === 'creation' ? 'active' : ''}`}
                 onClick={() => setActivityFilter('creation')}
               >
@@ -511,14 +474,25 @@ const UserAccount = () => {
                     <div className="activity-content">
                       <div className="activity-header">
                         <h3 className="activity-title">
-                          <span className="activity-recipe-link" onClick={() => handleRecipeClick({ recipeid: activity.recipe.id })}>
-                            {activity.recipe.name}
+                          <span 
+                            className="activity-recipe-link" 
+                            onClick={() => handleRecipeClick({ recipeid: activity.recipe?.id || activity.recipe_id })}
+                          >
+                            {activity.recipe?.name || activity.recipe_name || 'Unknown Recipe'}
                           </span>
                         </h3>
-                        <span className="activity-date">{formatDate(activity.date)}</span>
+                        <span className="activity-date">{formatDate(activity.date || activity.created_at)}</span>
                       </div>
                       <p className="activity-text">
-                        {getActivityText(activity)}
+                        {activity.type === 'rating' && 
+                          `You rated ${activity.recipe?.name || activity.recipe_name} ${activity.data?.score || activity.rating} stars${activity.data?.review || activity.review ? `: "${activity.data?.review || activity.review}"` : ''}`
+                        }
+                        {activity.type === 'creation' && 
+                          `You created a new recipe: ${activity.recipe?.name || activity.recipe_name}`
+                        }
+                        {activity.type === 'save' && 
+                          `You saved ${activity.recipe?.name || activity.recipe_name} to your collection`
+                        }
                       </p>
                     </div>
                   </div>

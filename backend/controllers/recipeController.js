@@ -627,3 +627,64 @@ export const getSavedRecipes = async (req, res) => {
         });
     }
 };
+
+// Function to get all ratings created by a specific user
+export const getUserRatings = async (req, res) => {
+    try {
+        const userId = req.params.userId;
+        console.log('Getting ratings for userId:', userId);
+        
+        if (!userId) {
+            return res.status(400).json({
+                error: 'User ID is required'
+            });
+        }
+
+        // Convert userId to number for consistency
+        const userIdNum = parseInt(userId, 10);
+        
+        // Join ratings with recipe table to get recipe details
+        const { data: ratings, error } = await supabase
+            .from('rating')
+            .select(`
+                ratingid,
+                recipeid,
+                score,
+                dateposted,
+                reviewtext,
+                recipe:recipeid (
+                    recipeid,
+                    name,
+                    description
+                )
+            `)
+            .eq('userid', userIdNum)
+            .order('dateposted', { ascending: false });
+            
+        if (error) {
+            console.error('Error fetching user ratings:', error);
+            return res.status(400).json({
+                error: 'Failed to fetch user ratings',
+                details: error.message
+            });
+        }
+
+        // Format the response to match our activity format
+        const formattedRatings = ratings.map(rating => ({
+            id: rating.ratingid,
+            recipe_id: rating.recipeid,
+            recipe_name: rating.recipe.name,
+            rating: rating.score,
+            review: rating.reviewtext,
+            created_at: rating.dateposted
+        }));
+        
+        res.status(200).json(formattedRatings);
+    } catch (error) {
+        console.error('Server error:', error);
+        res.status(500).json({
+            error: 'An unexpected error occurred',
+            details: error.message
+        });
+    }
+};

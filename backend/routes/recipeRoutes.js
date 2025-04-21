@@ -1,5 +1,5 @@
 import express from 'express';
-import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, debugGetUserRecipes, getSavedRecipes } from '../controllers/recipeController.js';
+import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, debugGetUserRecipes, getSavedRecipes, getUserRatings } from '../controllers/recipeController.js';
 
 const router = express.Router();
 
@@ -19,6 +19,9 @@ router.get('/user/:userId/recipes', (req, res) => {
 
 // Saved recipes route - for saved recipes functionality
 router.get('/user/:userId/saved-recipes', getSavedRecipes);
+
+// User ratings route - for activity page
+router.get('/user/:userId/ratings', getUserRatings);
 
 // Debug route for direct testing
 router.get('/debug/user/:userId/recipes', debugGetUserRecipes);
