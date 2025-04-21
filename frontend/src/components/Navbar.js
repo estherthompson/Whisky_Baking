@@ -31,7 +31,6 @@ const Navbar = () => {
         <div className='bubble'>
           <Link to="/" className="nav-logo">
             <img src={logo} alt="Whisky Baking Logo" />
-
           </Link>
         </div>
         <div className="nav-title">
