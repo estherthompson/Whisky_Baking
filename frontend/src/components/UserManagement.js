@@ -1,8 +1,17 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from 'axios';
 import '../styles/UserManagement.css';
 
 const UserManagement = () => {
   const [expandedUser, setExpandedUser] = useState(null);
+  const [showUsersTable, setShowUsersTable] = useState(false);
+  const [showRecipesTable, setShowRecipesTable] = useState(false);
+  const [expandedRecipe, setExpandedRecipe] = useState(null);
+  const [userCount, setUserCount] = useState(0);
+  const [adminCount, setAdminCount] = useState(0);
+  const [recipeCount, setRecipeCount] = useState(0);
+  
+  // Mock users data
   const [users] = useState([
     {
       id: 1,
@@ -35,12 +44,73 @@ const UserManagement = () => {
       isAdmin: true
     }
   ]);
+  
+  // Mock recipes data
+  const [recipes] = useState([
+    {
+      id: 1,
+      name: 'Whisky Brownie',
+      author: 'John Doe',
+      description: 'Rich chocolate brownies infused with premium whisky.',
+      ingredients: ['Chocolate', 'Flour', 'Sugar', 'Eggs', 'Whisky'],
+      isApproved: true
+    },
+    {
+      id: 2,
+      name: 'Bourbon Cake',
+      author: 'Jane Smith',
+      description: 'Moist vanilla cake with bourbon glaze.',
+      ingredients: ['Flour', 'Sugar', 'Butter', 'Eggs', 'Bourbon'],
+      isApproved: false
+    },
+    {
+      id: 3,
+      name: 'Scotch Cookies',
+      author: 'John Doe',
+      description: 'Buttery cookies with a hint of scotch.',
+      ingredients: ['Flour', 'Butter', 'Sugar', 'Scotch'],
+      isApproved: false
+    }
+  ]);
+
+  // Fetch stats from API
+  useEffect(() => {
+    const fetchStats = async () => {
+      try {
+        // Fetch total users
+        const usersResponse = await axios.get('http://localhost:5001/api/admin/total-users');
+        console.log('Total users response:', usersResponse.data);
+        if (usersResponse.data && usersResponse.data.totalUsers) {
+          setUserCount(usersResponse.data.totalUsers);
+        }
+        
+        // Fetch total admins
+        const adminsResponse = await axios.get('http://localhost:5001/api/admin/total-admins');
+        console.log('Total admins response:', adminsResponse.data);
+        if (adminsResponse.data && adminsResponse.data.totalAdmins) {
+          setAdminCount(adminsResponse.data.totalAdmins);
+        }
+
+        // Fetch total recipes
+        const recipesResponse = await axios.get('http://localhost:5001/api/admin/total-recipes');
+        console.log('Total recipes response:', recipesResponse.data);
+        if (recipesResponse.data && recipesResponse.data.totalRecipes) {
+          setRecipeCount(recipesResponse.data.totalRecipes);
+        }
+      } catch (error) {
+        console.error('Error fetching stats:', error);
+      }
+    };
+
+    fetchStats();
+  }, []);
 
   // Calculate stats
-  const totalUsers = users.length;
+  const totalUsers = userCount || users.length;
   const pendingApprovals = users.filter(user => !user.isApproved).length;
-  const totalAdmins = users.filter(user => user.isAdmin).length;
-  const pendingRecipes = users.filter(user => !user.isApproved).length;
+  const totalAdmins = adminCount || users.filter(user => user.isAdmin).length;
+  const totalRecipes = recipeCount || recipes.length;
+  
   const handleApproveUser = (userId) => {
     console.log('Approve user:', userId);
   };
@@ -48,9 +118,21 @@ const UserManagement = () => {
   const handleRejectUser = (userId) => {
     console.log('Reject user:', userId);
   };
+  
+  const handleApproveRecipe = (recipeId) => {
+    console.log('Approve recipe:', recipeId);
+  };
+
+  const handleRejectRecipe = (recipeId) => {
+    console.log('Reject recipe:', recipeId);
+  };
 
   const toggleUserDetails = (userId) => {
     setExpandedUser(expandedUser === userId ? null : userId);
+  };
+  
+  const toggleRecipeDetails = (recipeId) => {
+    setExpandedRecipe(expandedRecipe === recipeId ? null : recipeId);
   };
 
   return (
@@ -58,148 +140,148 @@ const UserManagement = () => {
       {/* Stats Section */}
       <div className="stats-section">
         <div className="stat-card">
-          <h3>Total Users</h3>
+          <h3>Users</h3>
           <p className="stat-number">{totalUsers}</p>
         </div>
         <div className="stat-card">
-          <h3>Pending Profiles</h3>
+          <h3>Pending</h3>
           <p className="stat-number">{pendingApprovals}</p>
         </div>
         <div className="stat-card">
-          <h3>Pending Recipes</h3>
-          <p className="stat-number">{pendingRecipes}</p>
+          <h3>Recipes</h3>
+          <p className="stat-number">{totalRecipes}</p>
         </div>
         <div className="stat-card">
-          <h3>Total Admins</h3>
+          <h3>Admins</h3>
           <p className="stat-number">{totalAdmins}</p>
         </div>
       </div>
 
-      {/* Desktop View */}
-      <div className="users-table desktop-view">
-        <table>
-          <thead>
-            <tr>
-              <th>User</th>
-              <th>Bio</th>
-              <th>Links</th>
-              <th>Status</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {users.map(user => (
-              <tr key={user.id}>
-                <td className="user-info">
-                  <div className="user-name">{user.name}</div>
-                  <div className="user-email">{user.email}</div>
-                </td>
-                <td className="user-bio">
-                  {user.bio}
-                </td>
-                <td className="user-links">
-                  {user.personalLinks.length > 0 ? (
-                    <ul>
-                      {user.personalLinks.map((link, index) => (
-                        <li key={index}>
-                          <a href={link} target="_blank" rel="noopener noreferrer">
-                            {link}
-                          </a>
-                        </li>
-                      ))}
-                    </ul>
-                  ) : (
-                    <span className="no-links">No links provided</span>
-                  )}
-                </td>
-                <td>
+      {/* Users Dropdown Toggle */}
+      <div className="users-dropdown-toggle first-dropdown" onClick={() => setShowUsersTable(!showUsersTable)}>
+        <h3>User Management {showUsersTable ? '▲' : '▼'}</h3>
+      </div>
+      
+      {/* Users Table (Collapsible) */}
+      {showUsersTable && (
+        <div className="users-card-container">
+          {users.map(user => (
+            <div key={user.id} className="user-card">
+              <div 
+                className="user-header"
+                onClick={() => toggleUserDetails(user.id)}
+              >
+                <div className="user-name">{user.name}</div>
+                <div className="user-status">
                   <span className={`status-badge ${user.isApproved ? 'approved' : 'pending'}`}>
                     {user.isApproved ? 'Approved' : 'Pending'}
                   </span>
-                </td>
-                <td className="actions">
-                  {!user.isApproved && (
-                    <>
-                      <button 
-                        className="approve-btn"
-                        onClick={() => handleApproveUser(user.id)}
-                      >
-                        Approve
-                      </button>
-                      <button 
-                        className="reject-btn"
-                        onClick={() => handleRejectUser(user.id)}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Mobile View */}
-      <div className="users-list mobile-view">
-        {users.map(user => (
-          <div key={user.id} className="user-card">
-            <div 
-              className="user-header"
-              onClick={() => toggleUserDetails(user.id)}
-            >
-              <div className="user-name">{user.name}</div>
-              <div className="user-status">
-                <span className={`status-badge ${user.isApproved ? 'approved' : 'pending'}`}>
-                  {user.isApproved ? 'Approved' : 'Pending'}
-                </span>
+                </div>
               </div>
+              
+              {expandedUser === user.id && (
+                <div className="user-details">
+                  <div className="user-email">{user.email}</div>
+                  <div className="user-username">@{user.username}</div>
+                  <div className="user-bio">{user.bio}</div>
+                  <div className="user-links">
+                    {user.personalLinks.length > 0 ? (
+                      <ul>
+                        {user.personalLinks.map((link, index) => (
+                          <li key={index}>
+                            <a href={link} target="_blank" rel="noopener noreferrer">
+                              {link}
+                            </a>
+                          </li>
+                        ))}
+                      </ul>
+                    ) : (
+                      <span className="no-links">No links provided</span>
+                    )}
+                  </div>
+                  <div className="user-actions">
+                    {!user.isApproved && (
+                      <>
+                        <button 
+                          className="approve-btn"
+                          onClick={() => handleApproveUser(user.id)}
+                        >
+                          Approve
+                        </button>
+                        <button 
+                          className="reject-btn"
+                          onClick={() => handleRejectUser(user.id)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
-            
-            {expandedUser === user.id && (
-              <div className="user-details">
-                <div className="user-email">{user.email}</div>
-                <div className="user-username">@{user.username}</div>
-                <div className="user-bio">{user.bio}</div>
-                <div className="user-links">
-                  {user.personalLinks.length > 0 ? (
+          ))}
+        </div>
+      )}
+      
+      {/* Recipes Dropdown Toggle */}
+      <div className="users-dropdown-toggle" onClick={() => setShowRecipesTable(!showRecipesTable)}>
+        <h3>Recipe Management {showRecipesTable ? '▲' : '▼'}</h3>
+      </div>
+      
+      {/* Recipes Table (Collapsible) */}
+      {showRecipesTable && (
+        <div className="users-card-container">
+          {recipes.map(recipe => (
+            <div key={recipe.id} className="user-card">
+              <div 
+                className="user-header"
+                onClick={() => toggleRecipeDetails(recipe.id)}
+              >
+                <div className="user-name">{recipe.name}</div>
+                <div className="user-status">
+                  <span className={`status-badge ${recipe.isApproved ? 'approved' : 'pending'}`}>
+                    {recipe.isApproved ? 'Approved' : 'Pending'}
+                  </span>
+                </div>
+              </div>
+              
+              {expandedRecipe === recipe.id && (
+                <div className="user-details">
+                  <div className="recipe-author">By: {recipe.author}</div>
+                  <div className="recipe-description">{recipe.description}</div>
+                  <div className="recipe-ingredients">
+                    <h4>Ingredients:</h4>
                     <ul>
-                      {user.personalLinks.map((link, index) => (
-                        <li key={index}>
-                          <a href={link} target="_blank" rel="noopener noreferrer">
-                            {link}
-                          </a>
-                        </li>
+                      {recipe.ingredients.map((ingredient, index) => (
+                        <li key={index}>{ingredient}</li>
                       ))}
                     </ul>
-                  ) : (
-                    <span className="no-links">No links provided</span>
-                  )}
+                  </div>
+                  <div className="user-actions">
+                    {!recipe.isApproved && (
+                      <>
+                        <button 
+                          className="approve-btn"
+                          onClick={() => handleApproveRecipe(recipe.id)}
+                        >
+                          Approve
+                        </button>
+                        <button 
+                          className="reject-btn"
+                          onClick={() => handleRejectRecipe(recipe.id)}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="user-actions">
-                  {!user.isApproved && (
-                    <>
-                      <button 
-                        className="approve-btn"
-                        onClick={() => handleApproveUser(user.id)}
-                      >
-                        Approve
-                      </button>
-                      <button 
-                        className="reject-btn"
-                        onClick={() => handleRejectUser(user.id)}
-                      >
-                        Reject
-                      </button>
-                    </>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
-      </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };

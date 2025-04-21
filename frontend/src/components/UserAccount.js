@@ -61,6 +61,10 @@ const UserAccount = () => {
     if (activeTab === 'activity' && user) {
       fetchUserActivities();
     }
+    
+    if (activeTab === 'saved' && user) {
+      fetchSavedRecipes();
+    }
   }, [activeTab]);
 
   const fetchUserRecipes = async () => {
@@ -129,8 +133,6 @@ const UserAccount = () => {
         }
       }));
       
-      // Add some mock recently viewed recipes data
-      // In a real app, this would be fetched from a backend API
       const mockViewedRecipes = [
         {
           id: 'view-1',
@@ -252,16 +254,6 @@ const UserAccount = () => {
     }
   };
 
-  useEffect(() => {
-    if (activeTab === 'recipes') {
-      fetchUserRecipes();
-    } else if (activeTab === 'activity') {
-      fetchUserActivities();
-    } else if (activeTab === 'saved') {
-      fetchSavedRecipes();
-    }
-  }, [activeTab]);
-
   if (!user) {
     return null;
   }
@@ -308,23 +300,21 @@ const UserAccount = () => {
             <img src={recipeIcon} alt="My Recipes" className="icon" />
             <span className="text">My Recipes</span>
           </button>
+          <button
+            className={`tab ${activeTab === 'saved' ? 'active' : ''}`}
+            onClick={() => setActiveTab('saved')}
+          >
+            <img src={savedIcon} alt="Saved" className="icon" />
+            <span className="text">Saved Recipes</span>
+          </button>
           {!isAdmin && (
-            <>
-              <button
-                className={`tab ${activeTab === 'saved' ? 'active' : ''}`}
-                onClick={() => setActiveTab('saved')}
-              >
-                <img src={savedIcon} alt="Saved" className="icon" />
-                <span className="text">Saved Recipes</span>
-              </button>
-              <button
-                className={`tab ${activeTab === 'activity' ? 'active' : ''}`}
-                onClick={() => setActiveTab('activity')}
-              >
-                <img src={activityIcon} alt="Activity" className="icon" />
-                <span className="text">Activity</span>
-              </button>
-            </>
+            <button
+              className={`tab ${activeTab === 'activity' ? 'active' : ''}`}
+              onClick={() => setActiveTab('activity')}
+            >
+              <img src={activityIcon} alt="Activity" className="icon" />
+              <span className="text">Activity</span>
+            </button>
           )}
           <button
             className={`tab ${activeTab === 'settings' ? 'active' : ''}`}
@@ -406,7 +396,7 @@ const UserAccount = () => {
             )}
           </div>
         )}
-        {!isAdmin && activeTab === 'saved' && (
+        {activeTab === 'saved' && (
           <div className="saved-recipes">
             <h2>Saved Recipes</h2>
             {savedRecipesLoading ? (
