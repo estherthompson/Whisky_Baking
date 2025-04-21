@@ -1,7 +1,7 @@
 import React, { useEffect, useCallback } from 'react';
 import '../styles/RecipeModal.css';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faTimes, faClock, faStar } from '@fortawesome/free-solid-svg-icons';
+import { faTimes, faClock, faStar, faUtensils } from '@fortawesome/free-solid-svg-icons';
 
 const RecipeModal = ({ recipe, onClose }) => {
   const handleEscapeKey = useCallback((event) => {
@@ -12,8 +12,11 @@ const RecipeModal = ({ recipe, onClose }) => {
 
   useEffect(() => {
     document.addEventListener('keydown', handleEscapeKey);
+    document.body.style.overflow = 'hidden'; // Prevent body scrolling when modal is open
+    
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
+      document.body.style.overflow = 'auto'; // Restore body scrolling when modal is closed
     };
   }, [handleEscapeKey]);
 
@@ -43,11 +46,23 @@ const RecipeModal = ({ recipe, onClose }) => {
         </button>
 
         <div className="modal-left">
-          {recipe.imageurl && (
-            <div className="modal-image">
-              <img src={recipe.imageurl} alt={recipe.name} />
-            </div>
-          )}
+          <div className="modal-image">
+            {recipe.imageurl ? (
+              <img 
+                src={recipe.imageurl} 
+                alt={recipe.name} 
+                onError={(e) => {
+                  console.log('Image failed to load:', recipe.imageurl);
+                  e.target.onerror = null;
+                  e.target.src = '/placeholder-recipe.jpg';
+                }}
+              />
+            ) : (
+              <div className="recipe-placeholder-icon">
+                <FontAwesomeIcon icon={faUtensils} size="3x" />
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="modal-right">
@@ -69,11 +84,15 @@ const RecipeModal = ({ recipe, onClose }) => {
           <div className="recipe-ingredients">
             <h3>Ingredients</h3>
             <ul>
-              {recipe.ingredients && recipe.ingredients.map((ingredient, index) => (
-                <li key={index}>
-                  {ingredient.quantity} {ingredient.name}
-                </li>
-              ))}
+              {recipe.ingredients && recipe.ingredients.length > 0 ? (
+                recipe.ingredients.map((ingredient, index) => (
+                  <li key={index}>
+                    {ingredient.quantity} {ingredient.name}
+                  </li>
+                ))
+              ) : (
+                <li>No ingredients listed</li>
+              )}
             </ul>
           </div>
 
