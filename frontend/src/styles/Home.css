@@ -86,69 +86,91 @@
   text-align: center;
 }
 
+.filters-section {
+  margin-bottom: 20px;
+}
+
+.filters-section h2 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.2em;
+}
+
 .restrictions-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  padding: 10px;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
   margin-bottom: 20px;
 }
 
 .restriction-checkbox {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  padding: 8px 12px;
+  background-color: #fff;
+  border-radius: 6px;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-weight: 500;
-  color: #4a5568;
+  font-size: 0.9em;
 }
 
 .restriction-checkbox:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  background-color: #f5f5f5;
 }
 
 .restriction-checkbox input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  border: 2px solid #CBD5E0;
-  cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  background: white;
-  transition: all 0.2s ease;
+  margin-right: 8px;
 }
 
-.restriction-checkbox input[type="checkbox"]:checked {
-  background-color: #FF69B4;
-  border-color: #FF69B4;
+/* Style for the first restriction */
+.restriction-checkbox:nth-child(1) {
+  background-color: #FFE6E6;
 }
 
-.restriction-checkbox input[type="checkbox"]:checked::after {
-  content: '✓';
-  position: absolute;
-  color: white;
-  font-size: 14px;
-  left: 4px;
-  top: 0;
+/* Style for the second restriction */
+.restriction-checkbox:nth-child(2) {
+  background-color: #E6FFE6;
 }
 
-/* Pastel colors for dietary restrictions */
-.restriction-checkbox:nth-child(1) { background-color: #FFDADA; }  /* Soft Pink */
-.restriction-checkbox:nth-child(2) { background-color: #DAFFDA; }  /* Soft Mint */
-.restriction-checkbox:nth-child(3) { background-color: #DADAFF; }  /* Soft Lavender */
-.restriction-checkbox:nth-child(4) { background-color: #FFDAF0; }  /* Soft Rose */
-.restriction-checkbox:nth-child(5) { background-color: #FFFFDA; }  /* Soft Yellow */
-.restriction-checkbox:nth-child(6) { background-color: #DAF0FF; }  /* Soft Sky */
-.restriction-checkbox:nth-child(7) { background-color: #FFE4DA; }  /* Soft Peach */
-.restriction-checkbox:nth-child(8) { background-color: #E4DAFF; }  /* Soft Purple */
-.restriction-checkbox:nth-child(9) { background-color: #DAFFEC; }  /* Soft Aqua */
-.restriction-checkbox:nth-child(10) { background-color: #FFE8D6; } /* Soft Orange */
+/* Style for the third restriction */
+.restriction-checkbox:nth-child(3) {
+  background-color: #E6E6FF;
+}
+
+/* Style for the fourth restriction */
+.restriction-checkbox:nth-child(4) {
+  background-color: #FFE6FF;
+}
+
+/* Style for the fifth restriction */
+.restriction-checkbox:nth-child(5) {
+  background-color: #FFFFE6;
+}
+
+/* Style for the sixth restriction */
+.restriction-checkbox:nth-child(6) {
+  background-color: #E6FFFF;
+}
+
+/* Style for the seventh restriction */
+.restriction-checkbox:nth-child(7) {
+  background-color: #FFE6F0;
+}
+
+/* Style for the eighth restriction */
+.restriction-checkbox:nth-child(8) {
+  background-color: #F0FFE6;
+}
+
+/* Style for the ninth restriction */
+.restriction-checkbox:nth-child(9) {
+  background-color: #E6F0FF;
+}
+
+/* Style for the tenth restriction */
+.restriction-checkbox:nth-child(10) {
+  background-color: #FFE6E0;
+}
 
 .ingredients-grid {
   display: grid;
