@@ -18,25 +18,36 @@ const Home = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
-  const [excludedIngredients, setExcludedIngredients] = useState({
-    'eggs': true,
-    'milk': true,
-    'butter': true,
-    'flour': true,
-    'sugar': true,
-    'baking powder': true,
-    'salt': true,
-    'vanilla extract': true,
-    'chocolate': true,
-    'nuts': true,
-    'fruit': true,
-    'vegetables': true,
-    'cream': true,
-    'yeast': true,
-    'cinnamon': true,
-    'honey': true
-  });
+  const [ingredients, setIngredients] = useState([]);
+  const [excludedIngredients, setExcludedIngredients] = useState({});
   const filterPanelRef = useRef(null);
+
+  // Fetch all ingredients from the database
+  const fetchIngredients = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('ingredient')
+        .select('ingredientid, name')
+        .order('name');
+
+      if (error) throw error;
+
+      // Initialize excludedIngredients state with all ingredients unchecked
+      const initialExcludedState = data.reduce((acc, ingredient) => {
+        acc[ingredient.name] = true;
+        return acc;
+      }, {});
+
+      setIngredients(data);
+      setExcludedIngredients(initialExcludedState);
+    } catch (error) {
+      console.error('Error fetching ingredients:', error);
+    }
+  };
+
+  useEffect(() => {
+    fetchIngredients();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -140,8 +151,10 @@ const Home = () => {
   };
 
   useEffect(() => {
-    fetchRecipes();
-  }, [excludedIngredients]); // Fetch recipes when excluded ingredients change
+    if (ingredients.length > 0) {
+      fetchRecipes();
+    }
+  }, [excludedIngredients, ingredients]);
 
   const handleRecipeClick = async (recipe) => {
     console.log('Recipe clicked:', recipe);
@@ -248,18 +261,18 @@ const Home = () => {
             <div className="filters-panel" ref={filterPanelRef}>
               <h2>Exclude Ingredients</h2>
               <div className="ingredients-grid">
-                {Object.keys(excludedIngredients).map((ingredient) => (
+                {ingredients.map((ingredient) => (
                   <label 
-                    key={ingredient} 
+                    key={ingredient.ingredientid} 
                     className="ingredient-checkbox"
-                    data-ingredient={ingredient.toLowerCase()}
+                    data-ingredient={ingredient.name.toLowerCase()}
                   >
                     <input
                       type="checkbox"
-                      checked={excludedIngredients[ingredient]}
-                      onChange={() => handleIngredientToggle(ingredient)}
+                      checked={excludedIngredients[ingredient.name]}
+                      onChange={() => handleIngredientToggle(ingredient.name)}
                     />
-                    {ingredient.charAt(0).toUpperCase() + ingredient.slice(1)}
+                    {ingredient.name}
                   </label>
                 ))}
               </div>
@@ -268,62 +281,64 @@ const Home = () => {
         </div>
       </div>
 
-      <div className="content-section">
-        <h2 className="section-title">Popular Recipes</h2>
-        {loading ? (
-          <div className="loading">Loading recipes...</div>
-        ) : recipes.length > 0 ? (
-          <div className="recipe-grid">
-            {recipes.map((recipe) => (
-              <div 
-                key={recipe.recipeid} 
-                className="recipe-card"
-                onClick={() => handleRecipeClick(recipe)}
-                style={{ cursor: 'pointer' }}
-                role="button"
-                tabIndex={0}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    handleRecipeClick(recipe);
-                  }
-                }}
-              >
-                <div className="recipe-image">
-                  {recipe.imageurl ? (
-                    <img 
-                      src={recipe.imageurl} 
-                      alt={recipe.name}
-                      onError={(e) => {
-                        console.log('Image failed to load:', recipe.imageurl);
-                        e.target.onerror = null;
-                        e.target.src = '/placeholder-recipe.jpg';
-                      }}
-                    />
-                  ) : (
-                    <div className="recipe-icon">
-                      <FontAwesomeIcon icon={faUtensils} size="3x" />
-                    </div>
-                  )}
-                </div>
-                <div className="recipe-info">
-                  <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>
-                  <div className="recipe-meta">
-                    <span className="prep-time">
-                      <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
-                    </span>
-                    <span className="rating">
-                      <FontAwesomeIcon icon={faStar} /> {recipe.averageRating?.toFixed(1) || 'N/A'}
-                    </span>
+      {(loading || recipes.length > 0) && (
+        <div className="content-section">
+          <h2 className="section-title">Popular Recipes</h2>
+          {loading ? (
+            <div className="loading">Loading recipes...</div>
+          ) : recipes.length > 0 ? (
+            <div className="recipe-grid">
+              {recipes.map((recipe) => (
+                <div 
+                  key={recipe.recipeid} 
+                  className="recipe-card"
+                  onClick={() => handleRecipeClick(recipe)}
+                  style={{ cursor: 'pointer' }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      handleRecipeClick(recipe);
+                    }
+                  }}
+                >
+                  <div className="recipe-image">
+                    {recipe.imageurl ? (
+                      <img 
+                        src={recipe.imageurl} 
+                        alt={recipe.name}
+                        onError={(e) => {
+                          console.log('Image failed to load:', recipe.imageurl);
+                          e.target.onerror = null;
+                          e.target.src = '/placeholder-recipe.jpg';
+                        }}
+                      />
+                    ) : (
+                      <div className="recipe-icon">
+                        <FontAwesomeIcon icon={faUtensils} size="3x" />
+                      </div>
+                    )}
                   </div>
-                  <p className="recipe-description">{recipe.description || 'No description available'}</p>
+                  <div className="recipe-info">
+                    <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>
+                    <div className="recipe-meta">
+                      <span className="prep-time">
+                        <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
+                      </span>
+                      <span className="rating">
+                        <FontAwesomeIcon icon={faStar} /> {recipe.averageRating?.toFixed(1) || 'N/A'}
+                      </span>
+                    </div>
+                    <p className="recipe-description">{recipe.description || 'No description available'}</p>
+                  </div>
                 </div>
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="no-results">No recipes found. Try adjusting your search or filters.</div>
-        )}
-      </div>
+              ))}
+            </div>
+          ) : (
+            <div className="no-results">No recipes found. Try adjusting your search or filters.</div>
+          )}
+        </div>
+      )}
 
       {selectedRecipe && (
         <RecipeModal

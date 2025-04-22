@@ -1,5 +1,5 @@
 import express from 'express';
-import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, debugGetUserRecipes, getSavedRecipes, getUserRatings } from '../controllers/recipeController.js';
+import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, debugGetUserRecipes, getSavedRecipes, getUserRatings, uploadRecipeImage } from '../controllers/recipeController.js';
 import { createRating } from '../controllers/ratingController.js';
 
 const router = express.Router();
@@ -9,6 +9,9 @@ router.get('/recipes', getAllRecipes);
 router.get('/recipes/:id', getRecipeById);
 router.post('/recipes', createRecipe);
 router.post('/recipes/save', savedRecipe);
+
+// Recipe image upload route
+router.post('/recipes/:recipeId/image', uploadRecipeImage);
 
 // User recipes route - for "My Recipes" functionality
 router.get('/user/:userId/recipes', (req, res) => {
