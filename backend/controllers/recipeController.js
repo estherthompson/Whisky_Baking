@@ -199,8 +199,17 @@ export const createRecipe = async (req, res) => {
 
 export const savedRecipe = async (req, res) => {
     try {
-        const { userid, recipeId, dateSaved } = req.body;
-        console.log('Received save recipe request:', req.body);
+        // Accept both parameter naming conventions for flexibility
+        const userid = req.body.userid || req.body.userId;
+        const recipeId = req.body.recipeId;
+        const dateSaved = req.body.dateSaved || req.body.datesaved;
+        
+        console.log('Received save recipe request:', {
+            userid,
+            recipeId,
+            dateSaved,
+            originalBody: req.body
+        });
 
         if (!userid || !recipeId) {
             return res.status(400).json({
@@ -571,8 +580,9 @@ export const debugGetUserRecipes = async (req, res) => {
 // Function to get all saved recipes for a specific user
 export const getSavedRecipes = async (req, res) => {
     try {
-        const userid = req.params.userid;
-        console.log('Getting saved recipes for userid:', userid);
+        // Fix parameter name to match route definition
+        const userid = req.params.userId; // Changed from 'userid' to 'userId' to match route
+        console.log('Getting saved recipes for userId:', userid);
         
         if (!userid) {
             return res.status(400).json({
@@ -595,7 +605,8 @@ export const getSavedRecipes = async (req, res) => {
                     description,
                     instructions,
                     recipetime,
-                    userid
+                    userid,
+                    imageurl
                 )
             `)
             .eq('userid', useridNum)

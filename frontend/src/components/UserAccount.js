@@ -24,9 +24,22 @@ import RecipeModal from './RecipeModal';
 const UserAccount = () => {
   const navigate = useNavigate();
   const location = useLocation();
-  const user = JSON.parse(localStorage.getItem('user'));
   
-  // Use activeTab from location state if provided, otherwise default to 'my-recipes'
+  const [user, setUser] = useState(() => {
+    try {
+      const userData = localStorage.getItem('user');
+      if (!userData) {
+        return null;
+      }
+      
+      const parsedUser = JSON.parse(userData);
+      return parsedUser;
+    } catch (error) {
+      console.error('Error parsing user data from localStorage:', error);
+      return null;
+    }
+  });
+  
   const [activeTab, setActiveTab] = useState(location.state?.activeTab || 'my-recipes');
   const [showUserManagement, setShowUserManagement] = useState(false);
   const [imagePreview, setImagePreview] = useState(user?.profileImage || defaultProfileImage);
@@ -54,59 +67,68 @@ const UserAccount = () => {
       navigate('/login');
     }
   }, [user, navigate]);
+  
+  useEffect(() => {
+    return () => {
+      // Cleanup on unmount
+    };
+  }, []);
 
   useEffect(() => {
-    if (activeTab === 'my-recipes' && user) {
-      console.log("Full user object from localStorage:", user);
-      console.log("User ID property name check:", {
-        UserID: user.UserID,
-        userid: user.userid,
-        userId: user.userId,
-        user_id: user.user_id
-      });
+    if (!user) {
+      return;
+    }
+    
+    if (activeTab === 'my-recipes') {
       fetchUserRecipes();
     }
     
-    if (activeTab === 'activity' && user) {
+    if (activeTab === 'activity') {
       fetchUserActivities();
     }
     
-    if (activeTab === 'saved' && user) {
-      fetchSavedRecipes();
+    if (activeTab === 'saved') {
+      setSavedRecipes([]);
+      setSavedRecipesLoading(true);
+      setTimeout(() => {
+        fetchSavedRecipes();
+      }, 100);
     }
   }, [activeTab]);
 
-  // Fetch user profile when the settings tab is active
   useEffect(() => {
     if (activeTab === 'settings' && user) {
       fetchUserProfile();
     }
   }, [activeTab]);
 
+  useEffect(() => {
+    const handleRecipeSaved = (event) => {
+      if (activeTab === 'saved') {
+        fetchSavedRecipes();
+      }
+    };
+    
+    window.addEventListener('recipeSaved', handleRecipeSaved);
+    
+    return () => {
+      window.removeEventListener('recipeSaved', handleRecipeSaved);
+    };
+  }, [activeTab]); 
+
   const fetchUserRecipes = async () => {
     if (!user) return;
     
-    // Try to get userId from the various possible property names
     const userId = user.UserID || user.userid || user.userId || user.id;
     if (!userId) {
       console.error("Cannot find user ID in user object:", user);
       return;
     }
     
-    console.log("=== BEGINNING USER RECIPES FETCH ===");
-    console.log("Fetching recipes for user ID:", userId);
     setLoading(true);
     
     try {
-      // Call the API to get the user's recipes
-      console.log(`Calling API: http://localhost:5001/api/user/${userId}/recipes`);
       const response = await axios.get(`http://localhost:5001/api/user/${userId}/recipes`);
-      
-      console.log("API Response status:", response.status);
-      console.log("Raw recipes data:", response.data);
-      
-      // Log the exact structure of the API response
-      console.log("API Response stringified:", JSON.stringify(response.data));
       
       if (!Array.isArray(response.data)) {
         console.error("Expected array response but got:", typeof response.data);
@@ -114,49 +136,11 @@ const UserAccount = () => {
         return;
       }
       
-      // Process each recipe to ensure it has the necessary fields
       const processedRecipes = response.data.map(recipe => {
-        // Inspect every property of the recipe object
-        console.log(`RECIPE ${recipe.recipeid || 'unknown'} FULL DETAILS:`, recipe);
-        console.log(`Recipe keys:`, Object.keys(recipe));
-        
-        // We found the issue! 
-        // The backend controller uses 'imageUrl' (capital U) in the response
-        // But the database field is 'imageurl' (lowercase u)
-        // We need to explicitly check for both
-        
-        // Debug log each possible image URL field with its exact value
-        console.log('Image URL debugging for recipe', recipe.recipeid, {
-          'imageurl (lowercase)': recipe.imageurl,
-          'imageUrl (capital U)': recipe.imageUrl,
-          'imageURL (all caps)': recipe.imageURL
-        });
-        
-        // Check for any property that might contain the image URL
-        const allKeys = Object.keys(recipe);
-        const imageKeys = allKeys.filter(key => 
-          key.toLowerCase().includes('image') || 
-          key.toLowerCase().includes('photo') || 
-          key.toLowerCase().includes('picture')
-        );
-        
-        if (imageKeys.length > 0) {
-          console.log('Found potential image keys:', imageKeys);
-          imageKeys.forEach(key => {
-            console.log(`Value of ${key}:`, recipe[key]);
-          });
-        }
-        
-        // Select the image URL using the proper case from the controller response
-        // The controller is returning 'imageUrl' with capital U
         const imageUrl = recipe.imageUrl || recipe.imageurl || null;
         
-        console.log(`Selected image URL for recipe ${recipe.recipeid}:`, imageUrl);
-        
-        // Create a processed recipe that explicitly copies both versions of the field
         const processedRecipe = {
           ...recipe,
-          // Ensure both lowercase and capital U versions are available
           imageurl: imageUrl,
           imageUrl: imageUrl,
           user_account: {
@@ -164,63 +148,34 @@ const UserAccount = () => {
           }
         };
         
-        console.log(`Processed recipe ${recipe.recipeid} image fields:`, {
-          original_imageurl: recipe.imageurl,
-          original_imageUrl: recipe.imageUrl,
-          normalized_imageurl: processedRecipe.imageurl,
-          normalized_imageUrl: processedRecipe.imageUrl
-        });
-        
         return processedRecipe;
       });
       
-      console.log("=== FINAL PROCESSED RECIPES ===");
-      processedRecipes.forEach(recipe => {
-        console.log(`Recipe ${recipe.recipeid}: ${recipe.name}, Image URL: ${recipe.imageUrl || recipe.imageurl || 'NONE'}`);
-      });
-      
-      // Set the recipes first so we have something to display
       setMyRecipes(processedRecipes);
       
       if (processedRecipes.length === 0) {
-        console.log("No recipes found for this user");
         return;
       }
-      
-      // Now fetch complete details for each recipe to ensure we have all fields including images
-      console.log("Fetching complete details for each recipe to get images...");
       
       const detailedRecipes = await Promise.all(
         processedRecipes.map(async (recipe) => {
           try {
-            // This is the same call that handleRecipeClick makes which loads the images correctly
             const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
             const detailedRecipe = response.data;
             
-            console.log(`Detailed recipe ${recipe.recipeid} data:`, {
-              imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl,
-              ratings: detailedRecipe.ratings?.length || 0,
-              averageRating: detailedRecipe.averageRating
-            });
-            
-            // Calculate the average rating if needed
             let averageRating = detailedRecipe.averageRating;
             if (!averageRating && detailedRecipe.ratings && detailedRecipe.ratings.length > 0) {
               const totalRating = detailedRecipe.ratings.reduce((sum, rating) => sum + rating.score, 0);
               averageRating = (totalRating / detailedRecipe.ratings.length).toFixed(1);
             }
             
-            // Combine the data, ensuring we have the image URL and ratings
             return {
               ...recipe,
               ...detailedRecipe,
-              // Ensure both versions of image URL
               imageurl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
               imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
-              // Ensure we have rating data
               averageRating: averageRating || recipe.averageRating || 'N/A',
               ratings: detailedRecipe.ratings || [],
-              // Keep consistent user info
               user_account: {
                 username: recipe.username || recipe.user_account?.username || user.username || 'Unknown'
               }
@@ -232,7 +187,6 @@ const UserAccount = () => {
         })
       );
       
-      console.log("Detailed recipes with images:", detailedRecipes);
       setMyRecipes(detailedRecipes);
       
     } catch (error) {
@@ -241,7 +195,6 @@ const UserAccount = () => {
       setMyRecipes([]);
     } finally {
       setLoading(false);
-      console.log("=== END USER RECIPES FETCH ===");
     }
   };
 
@@ -258,7 +211,6 @@ const UserAccount = () => {
     
     try {
       const response = await axios.get(`http://localhost:5001/api/user/${userId}/ratings`);
-      console.log('User ratings:', response.data);
       
       const realActivities = response.data.map(rating => ({
         id: rating.id || rating.rating_id,
@@ -274,8 +226,6 @@ const UserAccount = () => {
         }
       }));
       
-
-      // Combine the real ratings with the mock viewed recipes
       setActivities([...realActivities]);
       setActivityLoading(false);
       
@@ -283,39 +233,30 @@ const UserAccount = () => {
       console.error('Error fetching user ratings:', error);
       setActivityLoading(false);
       
-      // Fallback to empty array if the API call fails
       setActivities([]);
     }
   };
 
   const handleRecipeClick = async (recipe) => {
-    console.log('Recipe clicked:', recipe);
-    
     try {
-      console.log(`Fetching details for recipe ID: ${recipe.recipeid}`);
       const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
-      console.log('Recipe details API response:', response.data);
       
       const recipeData = response.data;
       
-      // Format the recipe to include user account information
       const formattedRecipe = {
         ...recipeData,
         username: activeTab === 'my-recipes' ? user.username : (recipeData.username || 'Unknown'),
         user_account: {
           username: activeTab === 'my-recipes' ? user.username : (recipeData.username || 'Unknown')
         },
-        // Preserve the original recipe data
         name: recipeData.name,
         description: recipeData.description,
         recipetime: recipeData.recipetime,
         rating: recipeData.rating,
         ingredients: recipeData.ingredients || [],
-        // Ensure image URL is properly set
         imageurl: recipeData.imageurl || recipe.imageurl || null
       };
       
-      console.log('Formatted recipe for modal:', formattedRecipe);
       setSelectedRecipe(formattedRecipe);
     } catch (error) {
       console.error('Error fetching recipe details:', error);
@@ -361,22 +302,41 @@ const UserAccount = () => {
   };
 
   const fetchSavedRecipes = async () => {
-    if (!user) return;
-    
-    // Use the same approach as fetchUserRecipes
-    const userId = user.UserID || user.userid || user.userId || user.id;
-    if (!userId) {
-      console.error("Cannot find user ID in user object:", user);
+    if (!user) {
+      console.error("No user object available");
       return;
     }
     
-    console.log("=== BEGINNING SAVED RECIPES FETCH ===");
-    console.log("Fetching saved recipes for user ID:", userId);
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    
+    if (!userId) {
+      console.error("Cannot find user ID in user object:", user);
+
+      const possibleIdProps = Object.keys(user).filter(key => 
+        key.toLowerCase().includes('id') && user[key]
+      );
+      
+      if (possibleIdProps.length > 0) {
+        const fallbackId = user[possibleIdProps[0]];
+        await fetchSavedRecipesWithId(fallbackId);
+      } else {
+        console.error("No valid user ID found, cannot fetch saved recipes");
+        setSavedRecipes([]);
+        setSavedRecipesLoading(false);
+      }
+      return;
+    }
+    
+    await fetchSavedRecipesWithId(userId);
+  };
+  
+  const fetchSavedRecipesWithId = async (userId) => {
     setSavedRecipesLoading(true);
     
     try {
-      const response = await axios.get(`http://localhost:5001/api/user/${userId}/saved-recipes`);
-      console.log('Saved recipes API response:', response.data);
+      const url = `http://localhost:5001/api/user/${userId}/saved-recipes`;
+      
+      const response = await axios.get(url);
       
       if (!response.data.recipes || !Array.isArray(response.data.recipes)) {
         console.error("Expected recipes array in response but got:", response.data);
@@ -384,8 +344,7 @@ const UserAccount = () => {
         return;
       }
       
-      // First set basic recipes data
-      const initialSavedRecipes = response.data.recipes.map(recipe => {
+      const processedRecipes = response.data.recipes.map(recipe => {
         const imageUrl = recipe.imageUrl || recipe.imageurl;
         return {
           ...recipe,
@@ -394,73 +353,38 @@ const UserAccount = () => {
         };
       });
       
-      // Set initial data
-      setSavedRecipes(initialSavedRecipes);
+      setSavedRecipes(processedRecipes);
       
-      if (initialSavedRecipes.length === 0) {
-        console.log("No saved recipes found");
-        return;
-      }
-      
-      // Then fetch full details for each recipe to get ratings and images
-      console.log("Fetching complete details for saved recipes...");
-      
-      const detailedRecipes = await Promise.all(
-        initialSavedRecipes.map(async (recipe) => {
-          try {
-            const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
-            const detailedRecipe = response.data;
-            
-            console.log(`Detailed saved recipe ${recipe.recipeid} data:`, {
-              imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl,
-              ratings: detailedRecipe.ratings?.length || 0,
-              averageRating: detailedRecipe.averageRating
-            });
-            
-            // Calculate the average rating if needed
-            let averageRating = detailedRecipe.averageRating;
-            if (!averageRating && detailedRecipe.ratings && detailedRecipe.ratings.length > 0) {
-              const totalRating = detailedRecipe.ratings.reduce((sum, rating) => sum + rating.score, 0);
-              averageRating = (totalRating / detailedRecipe.ratings.length).toFixed(1);
-            }
-            
-            // Merge the detailed data with the saved recipe data
-            return {
-              ...recipe,
-              ...detailedRecipe,
-              // Keep the original date saved
-              dateSaved: recipe.dateSaved,
-              // Ensure both versions of image URL
-              imageurl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
-              imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
-              // Ensure we have rating data
-              averageRating: averageRating || 'N/A',
-              ratings: detailedRecipe.ratings || []
-            };
-          } catch (error) {
-            console.error(`Error fetching details for saved recipe ${recipe.recipeid}:`, error);
-            return recipe;
-          }
-        })
-      );
-      
-      console.log("=== DETAILED SAVED RECIPES ===");
-      detailedRecipes.forEach(recipe => {
-        console.log(`Saved recipe ${recipe.recipeid}: ${recipe.name}, Rating: ${recipe.averageRating}, Image URL: ${recipe.imageUrl || recipe.imageurl || 'NONE'}`);
+      Promise.all(
+        processedRecipes.map(recipe => 
+          axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`)
+            .then(response => {
+              return {
+                ...recipe,
+                ...response.data,
+                dateSaved: recipe.dateSaved, 
+                imageurl: response.data.imageurl || response.data.imageUrl || recipe.imageUrl || recipe.imageurl,
+                imageUrl: response.data.imageurl || response.data.imageUrl || recipe.imageUrl || recipe.imageurl
+              };
+            })
+            .catch(error => {
+              console.error(`Error fetching details for recipe ${recipe.recipeid}:`, error);
+              return recipe; 
+            })
+        )
+      ).then(detailedRecipes => {
+        setSavedRecipes(detailedRecipes);
       });
       
-      setSavedRecipes(detailedRecipes);
     } catch (error) {
       console.error('Error fetching saved recipes:', error);
       console.error('Error details:', error.response?.data || error.message);
       setSavedRecipes([]);
     } finally {
       setSavedRecipesLoading(false);
-      console.log("=== END SAVED RECIPES FETCH ===");
     }
   };
 
-  // Fetch user profile data
   const fetchUserProfile = async () => {
     if (!user) return;
     
@@ -474,23 +398,20 @@ const UserAccount = () => {
     
     try {
       const response = await axios.get(`http://localhost:5001/api/user/${userId}/profile`);
-      console.log('Profile data:', response.data);
       setProfile(response.data);
-      
-      // Initialize form data with profile values
+
       setFormData({
         bio: response.data.bio || '',
         pronouns: response.data.pronouns || '',
-        personalLinks: '' // You might want to handle multiple links differently
+        personalLinks: '' 
       });
       
-      // Set image preview if there's an image
       if (response.data.imageurl) {
         setImagePreview(response.data.imageurl);
       }
     } catch (error) {
       if (error.response && error.response.status === 404) {
-        console.log('Profile not found, will create new one on save');
+        // Profile not found, will create new one on save
       } else {
         console.error('Error fetching user profile:', error);
       }
@@ -499,7 +420,6 @@ const UserAccount = () => {
     }
   };
 
-  // Handle profile form changes
   const handleProfileChange = (e) => {
     setFormData({
       ...formData,
@@ -507,7 +427,6 @@ const UserAccount = () => {
     });
   };
 
-  // Handle profile form submission
   const handleProfileSubmit = async (e) => {
     e.preventDefault();
     
@@ -525,12 +444,11 @@ const UserAccount = () => {
     try {
       let response;
       
-      // If profile exists, update it, otherwise create it
       if (profile) {
         response = await axios.put(`http://localhost:5001/api/user/${userId}/profile`, {
           bio: formData.bio,
           pronouns: formData.pronouns,
-          imageUrl: profile.imageurl // Keep the existing image URL
+          imageUrl: profile.imageurl 
         });
       } else {
         response = await axios.post('http://localhost:5001/api/profile', {
@@ -541,11 +459,9 @@ const UserAccount = () => {
         });
       }
       
-      console.log('Profile saved:', response.data);
       setProfile(response.data);
       setFormSuccess(true);
       
-      // Reset success message after a delay
       setTimeout(() => {
         setFormSuccess(false);
       }, 3000);
@@ -557,7 +473,7 @@ const UserAccount = () => {
     }
   };
 
-  // Handle profile image upload
+
   const handleImageUpload = async (file) => {
     if (!user || !file) return;
     
@@ -567,7 +483,6 @@ const UserAccount = () => {
       return;
     }
     
-    // Convert file to base64
     const reader = new FileReader();
     
     reader.onloadend = async () => {
@@ -578,13 +493,9 @@ const UserAccount = () => {
           file: base64File
         });
         
-        console.log('Image uploaded:', response.data);
-        
         if (response.data.imageUrl) {
-          // Update profile with new image URL
           setImagePreview(response.data.imageUrl);
           
-          // If profile exists, update it with new image URL
           if (profile) {
             setProfile({
               ...profile,
@@ -604,14 +515,12 @@ const UserAccount = () => {
   const handleImageChange = (e) => {
     const file = e.target.files[0];
     if (file) {
-      // Show preview immediately
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
       };
       reader.readAsDataURL(file);
       
-      // Upload image to server
       handleImageUpload(file);
     }
   };
@@ -621,20 +530,17 @@ const UserAccount = () => {
   }
 
   const handleLogout = () => {
-    // Clear user data from localStorage
     localStorage.removeItem('user');
     localStorage.removeItem('token');
     
-    // Redirect to login page
     navigate('/login');
   };
 
   const isAdmin = user.isadmin;
 
-  // Helper function to display star ratings
   const renderStarRating = (rating) => {
-    if (!rating || rating === 'N/A') {
-      return <span><FontAwesomeIcon icon={faStar} /> N/A</span>;
+    if (!rating || rating === 'N/A' || rating === 0 || rating === '0') {
+      return <span className="unrated"><FontAwesomeIcon icon={faStar} /> Unrated</span>;
     }
     
     const ratingNum = parseFloat(rating);
@@ -706,16 +612,7 @@ const UserAccount = () => {
               <div className="loading">Loading your recipes...</div>
             ) : myRecipes.length > 0 ? (
               <div className="recipe-grid">
-                {myRecipes.map((recipe) => {
-                  console.log(`=== RENDERING RECIPE CARD ${recipe.recipeid} ===`);
-                  console.log(`Recipe ${recipe.recipeid} in render:`, {
-                    name: recipe.name,
-                    imageurl: recipe.imageurl,
-                    imageUrl: recipe.imageUrl,
-                    keys: Object.keys(recipe)
-                  });
-                  
-                  return (
+                {myRecipes.map((recipe) => (
                   <div 
                     key={recipe.recipeid} 
                     className="recipe-card"
@@ -731,33 +628,21 @@ const UserAccount = () => {
                   >
                     <div className="recipe-image">
                       {(() => {
-                        // The backend controller uses 'imageUrl' (capital U)
-                        // But we need to check for both versions to be safe
                         const imageUrl = recipe.imageUrl || recipe.imageurl;
                         
-                        console.log(`Recipe ${recipe.recipeid} image rendering:`, {
-                          imageUrl_version: recipe.imageUrl,
-                          imageurl_version: recipe.imageurl,
-                          final_imageUrl: imageUrl
-                        });
-                        
                         if (imageUrl) {
-                          console.log(`Recipe ${recipe.recipeid} rendering image from URL:`, imageUrl);
                           return (
                             <img 
                               src={imageUrl}
                               alt={recipe.name}
                               style={{width: '100%', height: '100%', objectFit: 'cover'}}
-                              onLoad={() => console.log(`Image for recipe ${recipe.recipeid} loaded successfully from ${imageUrl}!`)}
                               onError={(e) => {
-                                console.error(`Image failed to load for recipe ${recipe.recipeid}:`, imageUrl);
                                 e.target.onerror = null;
                                 e.target.src = '/placeholder-recipe.jpg';
                               }}
                             />
                           );
                         } else {
-                          console.log(`Recipe ${recipe.recipeid} has NO image URL`);
                           return (
                             <div className="recipe-icon">
                               <FontAwesomeIcon icon={faUtensils} size="3x" />
@@ -780,8 +665,7 @@ const UserAccount = () => {
                       <p className="recipe-description">{recipe.description || 'No description available'}</p>
                     </div>
                   </div>
-                  );
-                })}
+                ))}
               </div>
             ) : (
               <div className="no-recipes">
@@ -796,22 +680,20 @@ const UserAccount = () => {
         {activeTab === 'saved' && (
           <div className="saved-recipes">
             <h2>Saved Recipes</h2>
+            <div className="refresh-container">
+              <button 
+                className="refresh-button"
+                onClick={fetchSavedRecipes}
+                disabled={savedRecipesLoading}
+              >
+                {savedRecipesLoading ? 'Loading...' : 'Refresh Recipes'}
+              </button>
+            </div>
             {savedRecipesLoading ? (
               <div className="loading">Loading your saved recipes...</div>
             ) : savedRecipes.length > 0 ? (
               <div className="recipe-grid">
-                {savedRecipes.map((recipe) => {
-                  console.log(`Rendering saved recipe ${recipe.recipeid}:`, {
-                    name: recipe.name,
-                    imageurl: recipe.imageurl,
-                    imageUrl: recipe.imageUrl,
-                    image_url: recipe.image_url,
-                    description: recipe.description?.substring(0, 30) + '...',
-                    dateSaved: recipe.dateSaved,
-                    fullRecipe: recipe
-                  });
-                  
-                  return (
+                {savedRecipes.map((recipe) => (
                   <div 
                     key={recipe.recipeid} 
                     className="recipe-card"
@@ -827,32 +709,21 @@ const UserAccount = () => {
                   >
                     <div className="recipe-image">
                       {(() => {
-                        // The backend controller uses 'imageUrl' (capital U) but we need to check both
                         const imageUrl = recipe.imageUrl || recipe.imageurl;
                         
-                        console.log(`Saved recipe ${recipe.recipeid} image rendering:`, {
-                          imageUrl_version: recipe.imageUrl,
-                          imageurl_version: recipe.imageurl,
-                          final_imageUrl: imageUrl
-                        });
-                        
                         if (imageUrl) {
-                          console.log(`Saved recipe ${recipe.recipeid} rendering image from URL:`, imageUrl);
                           return (
                             <img 
                               src={imageUrl}
                               alt={recipe.name}
                               style={{width: '100%', height: '100%', objectFit: 'cover'}}
-                              onLoad={() => console.log(`Image for saved recipe ${recipe.recipeid} loaded successfully!`)}
                               onError={(e) => {
-                                console.error(`Image failed to load for saved recipe ${recipe.recipeid}:`, imageUrl);
                                 e.target.onerror = null;
                                 e.target.src = '/placeholder-recipe.jpg';
                               }}
                             />
                           );
                         } else {
-                          console.log(`Saved recipe ${recipe.recipeid} has NO image URL`);
                           return (
                             <div className="recipe-icon">
                               <FontAwesomeIcon icon={faUtensils} size="3x" />
@@ -875,8 +746,7 @@ const UserAccount = () => {
                       <p className="recipe-description">{recipe.description?.substring(0, 100) || 'No description available'}</p>
                     </div>
                   </div>
-                  );
-                })}
+                ))}
               </div>
             ) : (
               <div className="no-recipes">

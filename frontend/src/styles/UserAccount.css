@@ -1030,3 +1030,41 @@ button:disabled:hover {
   display: flex;
   align-items: center;
 }
+
+.unrated {
+  display: inline-flex;
+  align-items: center;
+  color: #999;
+  font-style: italic;
+}
+
+.unrated svg {
+  margin-right: 4px;
+  opacity: 0.7;
+}
+
+.refresh-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 20px;
+}
+
+.refresh-button {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.refresh-button:hover:not(:disabled) {
+  background-color: #45a049;
+}
+
+.refresh-button:disabled {
+  background-color: #cccccc;
+  cursor: not-allowed;
+}

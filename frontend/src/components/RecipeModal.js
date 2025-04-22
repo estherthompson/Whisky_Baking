@@ -121,9 +121,9 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
       
       // Prepare the data for saving to saved_recipes table
       const savedRecipeData = {
-        userId: userId,
+        userid: userId,
         recipeId: recipe.recipeid,
-        datesaved: new Date().toISOString() // Current timestamp in ISO format
+        dateSaved: new Date().toISOString() // Current timestamp in ISO format
       };
       
       console.log('Saving recipe with data:', savedRecipeData);
@@ -138,6 +138,14 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         type: 'success',
         text: 'Recipe saved! You can find it in your account under Saved Recipes.'
       });
+      
+      // Dispatch an event to notify that a recipe was saved (for refreshing the Saved Recipes tab)
+      window.dispatchEvent(new CustomEvent('recipeSaved', {
+        detail: {
+          recipeId: recipe.recipeid,
+          userId: userId
+        }
+      }));
       
       // Clear message after 5 seconds
       setTimeout(() => setSaveMessage(null), 5000);
