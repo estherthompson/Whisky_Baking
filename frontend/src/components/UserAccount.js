@@ -62,9 +62,6 @@ const UserAccount = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
   const [formError, setFormError] = useState('');
-  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     if (!user) {
@@ -605,76 +602,6 @@ const UserAccount = () => {
     );
   };
 
-  const handleDeleteAccount = async () => {
-    if (!user) return;
-    
-    // Find the user ID - we need to make sure it's properly extracted
-    const possibleIdFields = ['UserID', 'userid', 'userId', 'id'];
-    let userId = null;
-    
-    for (const field of possibleIdFields) {
-      if (user[field] !== undefined && user[field] !== null) {
-        userId = user[field];
-        break;
-      }
-    }
-    
-    if (!userId) {
-      console.error("Cannot find valid user ID in user object:", user);
-      setDeleteError('User ID not found. Please try logging out and back in.');
-      return;
-    }
-    
-    console.log("Found user ID for deletion:", userId, "with type:", typeof userId);
-    
-    setDeleteLoading(true);
-    setDeleteError('');
-    
-    try {
-      console.log('Attempting to delete account for user ID:', userId);
-      
-      const response = await axios({
-        method: 'DELETE',
-        url: `http://localhost:5001/api/auth/user/${userId}`
-      });
-      
-      console.log('Account deletion response:', response.data);
-      
-      // Clear local storage and redirect to login page
-      localStorage.removeItem('user');
-      localStorage.removeItem('token');
-      
-      // Redirect to login page with message
-      navigate('/login', { state: { message: 'Your account has been successfully deleted.' } });
-      
-    } catch (error) {
-      console.error('Error deleting account:', error);
-      console.error('Error response:', error.response);
-      
-      let errorMessage = 'An error occurred while deleting your account. Please try again.';
-      
-      if (error.response?.data?.error) {
-        errorMessage = error.response.data.error;
-      } else if (error.response?.status === 404) {
-        errorMessage = 'Account not found. It may have already been deleted.';
-      } else if (error.response?.status === 400) {
-        errorMessage = 'Invalid request. Please try logging out and back in.';
-      }
-      
-      setDeleteError(errorMessage);
-      setDeleteLoading(false);
-    }
-  };
-
-  const confirmDeleteAccount = () => {
-    setDeleteModalOpen(true);
-  };
-
-  const cancelDeleteAccount = () => {
-    setDeleteModalOpen(false);
-    setDeleteError('');
-  };
-
   return (
     <div className="user-account-container">
       <div className="tabs-container">
@@ -1031,7 +958,7 @@ const UserAccount = () => {
                 <h3>Account Management</h3>
                 <div className="account-actions">
                   <button className="action-btn change-password-btn">Change Password</button>
-                  <button className="action-btn delete-account-btn" onClick={confirmDeleteAccount}>Delete Account</button>
+                  <button className="action-btn delete-account-btn">Delete Account</button>
                 </div>
               </div>
             </div>
@@ -1047,36 +974,6 @@ const UserAccount = () => {
           recipe={selectedRecipe}
           onClose={() => setSelectedRecipe(null)}
         />
-      )}
-
-      {/* Delete Account Confirmation Modal */}
-      {deleteModalOpen && (
-        <div className="modal-overlay">
-          <div className="modal-content delete-modal">
-            <h2>Delete Account</h2>
-            <p>Are you sure you want to delete your account? This action cannot be undone.</p>
-            <p>All your recipes, ratings, and saved content will be permanently deleted.</p>
-            
-            {deleteError && <div className="error-message">{deleteError}</div>}
-            
-            <div className="modal-actions">
-              <button 
-                className="cancel-btn" 
-                onClick={cancelDeleteAccount}
-                disabled={deleteLoading}
-              >
-                Cancel
-              </button>
-              <button 
-                className="delete-btn" 
-                onClick={handleDeleteAccount}
-                disabled={deleteLoading}
-              >
-                {deleteLoading ? 'Deleting...' : 'Yes, Delete My Account'}
-              </button>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

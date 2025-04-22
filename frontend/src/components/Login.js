@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import '../styles/Login.css';
 import loginImage from '../assets/images/login-image.png';
@@ -17,9 +17,7 @@ const Login = () => {
   const [error, setError] = useState('');
   const [verificationSent, setVerificationSent] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
   const [pendingReview, setPendingReview] = useState(null);
-  const [successMessage, setSuccessMessage] = useState('');
 
   useEffect(() => {
     // Check if there's a pending review
@@ -29,18 +27,13 @@ const Login = () => {
       console.log('Found pending review:', JSON.parse(pendingReviewData));
     }
     
-    // Check if there's a message from a redirect (e.g., account deletion)
-    if (location.state?.message) {
-      setSuccessMessage(location.state.message);
-    }
-    
     // Check if user is already logged in
     const user = localStorage.getItem('user');
     if (user) {
       // Handle the redirection based on pending review
       handlePostLoginRedirect(pendingReviewData);
     }
-  }, [navigate, location]);
+  }, [navigate]);
 
   const handlePostLoginRedirect = (pendingReviewData) => {
     if (pendingReviewData) {
@@ -191,14 +184,6 @@ const Login = () => {
                   >
                     Go to Login
                   </button>
-                </div>
-              </div>
-            )}
-            {successMessage && (
-              <div className="success-message">
-                <div className="success-content">
-                  <strong>Success!</strong>
-                  <p>{successMessage}</p>
                 </div>
               </div>
             )}
