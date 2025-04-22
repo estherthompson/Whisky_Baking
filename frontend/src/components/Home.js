@@ -107,6 +107,20 @@ const Home = () => {
     });
   };
 
+  const renderStarRating = (rating) => {
+    if (!rating || rating === 'N/A') {
+      return <span><FontAwesomeIcon icon={faStar} /> N/A</span>;
+    }
+    
+    const ratingNum = parseFloat(rating);
+    return (
+      <span className="star-rating">
+        <FontAwesomeIcon icon={faStar} className="star-filled" />
+        <span className="rating-value">{ratingNum.toFixed(1)}</span>
+      </span>
+    );
+  };
+
   const fetchRecipes = async () => {
     try {
       setLoading(true);
@@ -115,8 +129,7 @@ const Home = () => {
         .select(`
           *,
           user_account:userid (
-            username,
-            name
+            username
           ),
           recipe_ingredient (
             ingredient (
@@ -226,7 +239,7 @@ const Home = () => {
     // First set the basic recipe data to show the modal immediately
     setSelectedRecipe({
       ...recipe,
-      username: recipe.user_account?.name || recipe.user_account?.username || 'Unknown',
+      username: recipe.user_account?.username || 'Unknown',
       ingredients: [] // Will be populated after fetch
     });
     
@@ -237,8 +250,7 @@ const Home = () => {
         .select(`
           *,
           user_account:userid (
-            username,
-            name
+            username
           ),
           recipe_ingredient!inner (
             ingredient!inner (
@@ -527,12 +539,11 @@ const Home = () => {
                   <div className="recipe-info">
                     <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>
                     <div className="recipe-meta">
-                      <span className="recipe-author">By {recipe.username || 'Unknown'}</span>
                       <span className="prep-time">
                         <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
                       </span>
                       <span className="rating">
-                        <FontAwesomeIcon icon={faStar} /> {recipe.averageRating?.toFixed(1) || 'N/A'}
+                        {renderStarRating(recipe.averageRating)}
                       </span>
                     </div>
                     <p className="recipe-description">{recipe.description || 'No description available'}</p>
