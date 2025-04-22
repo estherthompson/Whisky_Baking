@@ -11,6 +11,7 @@ import {
 import homeBanner from '../assets/images/home-banner.jpg';
 import { supabase } from '../supabaseClient';
 import RecipeModal from './RecipeModal';
+import { useLocation } from 'react-router-dom';
 
 const Home = () => {
   const [recipes, setRecipes] = useState([]);
@@ -23,6 +24,7 @@ const Home = () => {
   const [dietaryRestrictions, setDietaryRestrictions] = useState([]);
   const [selectedRestrictions, setSelectedRestrictions] = useState({});
   const filterPanelRef = useRef(null);
+  const location = useLocation();
 
   // Fetch all ingredients and dietary restrictions from the database
   const fetchIngredients = async () => {
@@ -274,6 +276,18 @@ const Home = () => {
     }
   };
 
+  // Effect to handle opening recipe modal from navigation state
+  useEffect(() => {
+    if (location.state?.openRecipeId) {
+      const recipeId = location.state.openRecipeId;
+      const recipe = recipes.find(r => r.recipeid === recipeId);
+      if (recipe) {
+        console.log('Opening recipe modal with draft review:', location.state.draftReview);
+        handleRecipeClick(recipe);
+      }
+    }
+  }, [location.state, recipes]);
+
   return (
     <div className="home-container">
       <div 
@@ -411,6 +425,8 @@ const Home = () => {
             console.log('Closing modal');
             setSelectedRecipe(null);
           }}
+          initialShowReviewForm={!!location.state?.draftReview}
+          draftReview={location.state?.draftReview}
         />
       )}
     </div>

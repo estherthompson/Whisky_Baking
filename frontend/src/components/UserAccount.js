@@ -98,15 +98,20 @@ const UserAccount = () => {
     setLoading(true);
     
     try {
-      // Try the debug endpoint first to see what works
-      const debugResponse = await axios.get(`http://localhost:5001/api/debug/user/${userId}/recipes`);
-      console.log("Debug API response:", debugResponse.data);
-      
-      // Use the regular endpoint to get the actual recipes
+      // Use the regular endpoint to get the actual recipes with ratings
       const response = await axios.get(`http://localhost:5001/api/user/${userId}/recipes`);
-      console.log("Received recipes:", response.data);
+      console.log("Raw recipes data:", response.data);
       
-      setMyRecipes(response.data);
+      // Format the recipes to include user account information
+      const formattedRecipes = response.data.map(recipe => ({
+        ...recipe,
+        user_account: {
+          username: recipe.username || user.username || 'Unknown'
+        }
+      }));
+      
+      console.log("Formatted recipes:", formattedRecipes);
+      setMyRecipes(formattedRecipes);
       
       if (response.data.length === 0) {
         console.log("No recipes found for this user");
@@ -199,7 +204,24 @@ const UserAccount = () => {
   const handleRecipeClick = async (recipe) => {
     try {
       const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
-      setSelectedRecipe(response.data);
+      const recipeData = response.data;
+      
+      // Format the recipe to include user account information
+      const formattedRecipe = {
+        ...recipeData,
+        username: activeTab === 'my-recipes' ? user.username : (recipeData.username || 'Unknown'),
+        user_account: {
+          username: activeTab === 'my-recipes' ? user.username : (recipeData.username || 'Unknown')
+        },
+        // Preserve the original recipe data
+        name: recipeData.name,
+        description: recipeData.description,
+        recipetime: recipeData.recipetime,
+        rating: recipeData.rating,
+        ingredients: recipeData.ingredients || []
+      };
+      
+      setSelectedRecipe(formattedRecipe);
     } catch (error) {
       console.error('Error fetching recipe details:', error);
     }
@@ -263,7 +285,16 @@ const UserAccount = () => {
     try {
       const response = await axios.get(`http://localhost:5001/api/user/${userId}/saved-recipes`);
       console.log('Saved recipes:', response.data);
-      setSavedRecipes(response.data.recipes || []);
+      
+      // Format the recipes to include user account information
+      const formattedRecipes = response.data.recipes.map(recipe => ({
+        ...recipe,
+        user_account: {
+          username: recipe.username || 'Unknown'
+        }
+      }));
+      
+      setSavedRecipes(formattedRecipes || []);
     } catch (error) {
       console.error('Error fetching saved recipes:', error);
     } finally {
@@ -510,19 +541,19 @@ const UserAccount = () => {
                     style={{ cursor: 'pointer' }}
                     role="button"
                     tabIndex={0}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         handleRecipeClick(recipe);
                       }
                     }}
                   >
                     <div className="recipe-image">
-                      {recipe.image_url ? (
+                      {recipe.imageurl ? (
                         <img 
-                          src={recipe.image_url} 
+                          src={recipe.imageurl} 
                           alt={recipe.name}
                           onError={(e) => {
-                            console.log('Image failed to load:', recipe.image_url);
+                            console.log('Image failed to load:', recipe.imageurl);
                             e.target.onerror = null;
                             e.target.src = '/placeholder-recipe.jpg';
                           }}
@@ -540,7 +571,7 @@ const UserAccount = () => {
                           <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
                         </span>
                         <span className="rating">
-                          <FontAwesomeIcon icon={faStar} /> {recipe.rating || 'N/A'}
+                          <FontAwesomeIcon icon={faStar} /> N/A
                         </span>
                       </div>
                       <p className="recipe-description">{recipe.description || 'No description available'}</p>
@@ -573,7 +604,7 @@ const UserAccount = () => {
                     style={{ cursor: 'pointer' }}
                     role="button"
                     tabIndex={0}
-                    onKeyPress={(e) => {
+                    onKeyDown={(e) => {
                       if (e.key === 'Enter') {
                         handleRecipeClick(recipe);
                       }
