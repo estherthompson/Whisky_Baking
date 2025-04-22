@@ -219,7 +219,8 @@ const Home = () => {
       });
 
       console.log("Formatted recipes:", formattedRecipes); // Debug log
-      setRecipes(formattedRecipes);
+      const sortedRecipes = formattedRecipes.sort((a, b) => b.averageRating - a.averageRating);
+      setRecipes(sortedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
     } finally {
