@@ -391,15 +391,15 @@ const UploadRecipe = () => {
         });
       }
 
-      // Set success message
+      // Update success message to include approval info
       if (imageSuccess) {
-        setSuccess('Recipe and image uploaded successfully!');
+        setSuccess('Recipe and image uploaded successfully! Your recipe has been submitted for approval and should be visible within 24 hours.');
       } else if (imageUrl) {
-        setSuccess('Recipe uploaded successfully with image!');
+        setSuccess('Recipe uploaded successfully with image! Your recipe has been submitted for approval and should be visible within 24 hours.');
       } else if (formData.image) {
-        setSuccess('Recipe uploaded successfully but there was a problem with the image.');
+        setSuccess('Recipe uploaded successfully but there was a problem with the image. Your recipe has been submitted for approval and should be visible within 24 hours.');
       } else {
-        setSuccess('Recipe uploaded successfully!');
+        setSuccess('Recipe uploaded successfully! Your recipe has been submitted for approval and should be visible within 24 hours.');
       }
       
       // Reset form after successful submission
@@ -435,6 +435,14 @@ const UploadRecipe = () => {
   return (
     <div className="upload-recipe-container">
       <h2>Upload New Recipe</h2>
+      
+      <div className="approval-notice">
+        <p>
+          <strong>Please Note:</strong> All recipes require admin approval before they appear on the site. 
+          Approval typically takes up to 24 hours. Thank you for your patience!
+        </p>
+      </div>
+      
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
       {imageUploading && <div className="loading-message">Uploading image...</div>}

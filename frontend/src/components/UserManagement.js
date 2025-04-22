@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import '../styles/UserManagement.css';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faCheckCircle, faSync } from '@fortawesome/free-solid-svg-icons';
 
 const UserManagement = () => {
   const [expandedRecipe, setExpandedRecipe] = useState(null);
@@ -76,6 +78,20 @@ const UserManagement = () => {
     }
   };
   
+  const handleRejectRecipe = async (recipeId) => {
+    try {
+      if (window.confirm('Are you sure you want to reject this recipe? This action cannot be undone.')) {
+        const response = await axios.delete(`http://localhost:5001/api/admin/recipes/${recipeId}`);
+        console.log('Recipe rejected:', response.data);
+        
+        // Refresh the pending recipes
+        fetchPendingRecipes();
+      }
+    } catch (error) {
+      console.error('Error rejecting recipe:', error);
+    }
+  };
+  
   const toggleRecipeDetails = (recipeId) => {
     setExpandedRecipe(expandedRecipe === recipeId ? null : recipeId);
   };
@@ -101,7 +117,7 @@ const UserManagement = () => {
           <p className="stat-number">{adminCount}</p>
         </div>
       </div>
-      
+
       {/* Recipes Section */}
       <div className="recipes-section">
         <h2>Recipe Approval Management</h2>
@@ -112,18 +128,18 @@ const UserManagement = () => {
           ) : pendingRecipes && pendingRecipes.length > 0 ? (
             pendingRecipes.map(recipe => (
               <div key={recipe.recipeid} className="user-card">
-                <div 
-                  className="user-header"
+            <div 
+              className="user-header"
                   onClick={() => toggleRecipeDetails(recipe.recipeid)}
-                >
+            >
                   <div className="user-name">{recipe.name || 'Unnamed Recipe'}</div>
-                  <div className="user-status">
+              <div className="user-status">
                     <span className="status-badge pending">Pending Approval</span>
-                  </div>
-                </div>
-                
+              </div>
+            </div>
+            
                 {expandedRecipe === recipe.recipeid && (
-                  <div className="user-details">
+              <div className="user-details">
                     <div className="recipe-content">
                       <div className="recipe-info-grid">
                         <div className="recipe-info-item">
@@ -155,8 +171,8 @@ const UserManagement = () => {
                             ) : (
                               <li>Ingredients format not recognized</li>
                             )}
-                          </ul>
-                        ) : (
+                    </ul>
+                  ) : (
                           <p>No ingredients information available</p>
                         )}
                       </div>
@@ -177,28 +193,35 @@ const UserManagement = () => {
                           </div>
                         ) : (
                           <p>No instructions available</p>
-                        )}
-                      </div>
+                  )}
+                </div>
                     </div>
                     
-                    <div className="user-actions">
+                <div className="user-actions">
                       <button 
                         className="approve-btn"
                         onClick={() => handleApproveRecipe(recipe.recipeid)}
                       >
                         Approve Recipe
                       </button>
-                    </div>
-                  </div>
-                )}
+                      <button 
+                        className="reject-btn"
+                        onClick={() => handleRejectRecipe(recipe.recipeid)}
+                      >
+                        Decline Recipe
+                      </button>
+                </div>
               </div>
+            )}
+          </div>
             ))
           ) : (
             <div className="no-pending">
+              <FontAwesomeIcon icon={faCheckCircle} size="3x" className="check-icon" />
               <p>No pending recipes found</p>
-              <p>Recipes pending approval will appear here</p>
+              <p>All recipes have been approved. Check back later for new submissions.</p>
               <button onClick={fetchPendingRecipes} className="refresh-btn">
-                Refresh
+                <FontAwesomeIcon icon={faSync} className="refresh-icon" /> Refresh
               </button>
             </div>
           )}

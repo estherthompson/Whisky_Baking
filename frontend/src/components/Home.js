@@ -132,7 +132,8 @@ const Home = () => {
           rating (
             score
           )
-        `);
+        `)
+        .eq('is_approved', true); // Only fetch approved recipes
 
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
@@ -238,6 +239,7 @@ const Home = () => {
           )
         `)
         .eq('recipeid', recipe.recipeid)
+        .eq('is_approved', true) // Only get approved recipes
         .single();
 
       if (error) {

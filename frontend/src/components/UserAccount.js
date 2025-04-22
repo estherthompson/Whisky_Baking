@@ -792,28 +792,6 @@ const UserAccount = () => {
                 )}
               </div>
               <div className="settings-section">
-                <h3>Notification Preferences</h3>
-                <form className="notifications-form">
-                  <div className="checkbox-group">
-                    <input type="checkbox" id="email_notifications" name="email_notifications" />
-                    <label htmlFor="email_notifications">Email Notifications</label>
-                    <p className="description">Receive emails about new recipe comments, likes, and follows.</p>
-                  </div>
-                  <button type="submit" className="save-btn">Save Preferences</button>
-                </form>
-              </div>
-              <div className="settings-section">
-                <h3>Privacy Settings</h3>
-                <form className="privacy-form">
-                  <div className="checkbox-group">
-                    <input type="checkbox" id="public_profile" name="public_profile" />
-                    <label htmlFor="public_profile">Public Profile</label>
-                    <p className="description">Allow other users to view your profile and recipes.</p>
-                  </div>
-                  <button type="submit" className="save-btn">Save Privacy Settings</button>
-                </form>
-              </div>
-              <div className="settings-section">
                 <h3>Account Management</h3>
                 <div className="account-actions">
                   <button className="action-btn change-password-btn">Change Password</button>
