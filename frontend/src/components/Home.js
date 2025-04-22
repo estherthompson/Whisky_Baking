@@ -95,6 +95,7 @@ const Home = () => {
   }, []);
 
   const handleRestrictionToggle = (restrictionName) => {
+    // Update selected restrictions state
     setSelectedRestrictions(prev => ({
       ...prev,
       [restrictionName]: !prev[restrictionName]
@@ -111,15 +112,12 @@ const Home = () => {
     setExcludedIngredients(prev => {
       const newState = { ...prev };
       restrictedIngredients.forEach(ingredient => {
-        // If the restriction is being checked, exclude these ingredients
-        // If the restriction is being unchecked, include these ingredients
+        // If the restriction is being checked (e.g., selecting "Nut-Free")
+        // then exclude these ingredients (set to true)
         newState[ingredient] = !prev[restrictionName];
       });
       return newState;
     });
-
-    // Trigger recipe fetch after updating ingredients
-    fetchRecipes();
   };
 
   const handleIngredientToggle = (ingredient) => {
@@ -163,30 +161,41 @@ const Home = () => {
         throw error;
       }
 
-      // Filter out recipes that contain excluded ingredients
+      // Get all ingredients that should be excluded based on dietary restrictions
+      const restrictedIngredients = ingredients
+        .filter(ingredient => 
+          ingredient.dietary_restriction_ingredient?.some(dri => 
+            selectedRestrictions[dri.dietary_restriction.name]
+          )
+        )
+        .map(ingredient => ingredient.name.toLowerCase());
+
+      // Get unchecked ingredients from manual exclusions
       const uncheckedIngredients = Object.entries(excludedIngredients)
-        .filter(([_, isChecked]) => !isChecked)  // Get unchecked ingredients
+        .filter(([_, isChecked]) => !isChecked)
         .map(([ingredient]) => ingredient.toLowerCase());
 
-      // If no ingredients are unchecked, show all recipes
-      const filteredRecipes = uncheckedIngredients.length === 0
-        ? data // Show all recipes if no ingredients are unchecked
+      // Combine both sets of excluded ingredients
+      const allExcludedIngredients = [...new Set([...restrictedIngredients, ...uncheckedIngredients])];
+
+      // Filter recipes
+      const filteredRecipes = allExcludedIngredients.length === 0
+        ? data // Show all recipes if no ingredients are excluded
         : data.filter(recipe => {
             const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
               ri.ingredient.name.toLowerCase()
             ) || [];
             
-            // Filter out recipes that contain any unchecked ingredients
-            return !uncheckedIngredients.some(unchecked => 
+            // Filter out recipes that contain any excluded ingredients
+            return !allExcludedIngredients.some(excluded => 
               recipeIngredients.some(ingredient => 
-                ingredient.includes(unchecked)
+                ingredient.includes(excluded)
               )
             );
           });
 
       // Format the recipes with their ingredients and average rating
       const formattedRecipes = filteredRecipes.map(recipe => {
-        // Calculate average rating
         let averageRating = 0;
         if (recipe.rating && recipe.rating.length > 0) {
           const totalRating = recipe.rating.reduce((sum, r) => sum + r.score, 0);
