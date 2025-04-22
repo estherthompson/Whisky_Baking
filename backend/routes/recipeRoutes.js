@@ -1,5 +1,5 @@
 import express from 'express';
-import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, debugGetUserRecipes, getSavedRecipes, getUserRatings, uploadRecipeImage } from '../controllers/recipeController.js';
+import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, debugGetUserRecipes, getSavedRecipes, getUserRatings, uploadRecipeImage, deleteSavedRecipe } from '../controllers/recipeController.js';
 import { createRating } from '../controllers/ratingController.js';
 
 const router = express.Router();
@@ -23,6 +23,16 @@ router.get('/user/:userId/recipes', (req, res) => {
 
 // Saved recipes route - for saved recipes functionality
 router.get('/user/:userId/saved-recipes', getSavedRecipes);
+router.delete('/user/:userId/saved-recipes/:recipeId', deleteSavedRecipe);
+// Add a POST route that also handles DELETE via method override
+router.post('/user/:userId/saved-recipes/:recipeId', (req, res) => {
+  const methodOverride = req.headers['x-http-method-override'];
+  if (methodOverride && methodOverride.toLowerCase() === 'delete') {
+    console.log('Using method override: POST -> DELETE');
+    return deleteSavedRecipe(req, res);
+  }
+  return res.status(405).json({ error: 'Method not allowed. Expected DELETE method override.' });
+});
 
 // User ratings route - for activity page
 router.get('/user/:userId/ratings', getUserRatings);

@@ -1,7 +1,6 @@
 import axios from 'axios';
 
-// Base URL of your backend (the server running on localhost or deployed)
-const BASE_URL = 'http://localhost:5001/api'; // Adjust if your backend is running on a different port
+const BASE_URL = 'http://localhost:5001/api'; 
 
 // Exporting the axios instance to be used across the app
 export const getStudents = async () => {
