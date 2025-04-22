@@ -254,7 +254,23 @@ const UploadRecipe = () => {
     }
 
     try {
+      // Get user from localStorage
       const user = JSON.parse(localStorage.getItem('user'));
+      if (!user) {
+        setError('You must be logged in to upload a recipe');
+        navigate('/login');
+        return;
+      }
+      
+      // Get userId from different possible property names like in UserAccount.js
+      const userid = user.UserID || user.userid || user.userId || user.id;
+      if (!userid) {
+        console.error("Cannot find user ID in user object:", user);
+        setError('User ID not found. Please log in again.');
+        return;
+      }
+      
+      console.log("Using user ID for recipe creation:", userid);
       
       // Format instructions as a single string with numbered steps
       const formattedInstructions = formData.instructions
@@ -277,7 +293,7 @@ const UploadRecipe = () => {
         description: formData.description,
         instructions: formattedInstructions,
         recipeTime: recipeTimeValue,
-        userId: user?.UserID,
+        userid: userid, // Use the correctly found userid
         ingredients: formattedIngredients
       };
 
@@ -285,6 +301,8 @@ const UploadRecipe = () => {
       const response = await axios.post('http://localhost:5001/api/recipes', recipeData);
 
       setSuccess('Recipe uploaded successfully!');
+      
+      // Reset form after successful submission
       setFormData({
         name: '',
         description: '',
