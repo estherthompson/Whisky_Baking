@@ -17,13 +17,17 @@ const Home = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [showAvailableIngredients, setShowAvailableIngredients] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [ingredients, setIngredients] = useState([]);
   const [excludedIngredients, setExcludedIngredients] = useState({});
   const [dietaryRestrictions, setDietaryRestrictions] = useState([]);
   const [selectedRestrictions, setSelectedRestrictions] = useState({});
+  const [availableIngredients, setAvailableIngredients] = useState({});
+  const [allIngredients, setAllIngredients] = useState([]);
   const filterPanelRef = useRef(null);
+  const availableIngredientsRef = useRef(null);
   const location = useLocation();
 
   // Fetch all ingredients and dietary restrictions from the database
@@ -145,15 +149,13 @@ const Home = () => {
         throw error;
       }
 
-      console.log("data:", data)
-
       // Filter out recipes that contain excluded ingredients
       const uncheckedIngredients = Object.entries(excludedIngredients)
         .filter(([_, isChecked]) => !isChecked)  // Get unchecked ingredients
         .map(([ingredient]) => ingredient.toLowerCase());
 
       // If no ingredients are unchecked, show all recipes
-      const filteredRecipes = uncheckedIngredients.length === 0
+      let filteredRecipes = uncheckedIngredients.length === 0
         ? data // Show all recipes if no ingredients are unchecked
         : data.filter(recipe => {
             const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
@@ -167,6 +169,22 @@ const Home = () => {
               )
             );
           });
+
+      // Filter recipes based on selected available ingredients
+      const selectedIngredients = Object.entries(availableIngredients)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([name]) => name.toLowerCase());
+
+      if (selectedIngredients.length > 0) {
+        filteredRecipes = filteredRecipes.filter(recipe => {
+          const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
+            ri.ingredient.name.toLowerCase()
+          ) || [];
+          return selectedIngredients.every(selectedIng => 
+            recipeIngredients.some(recipeIng => recipeIng.includes(selectedIng))
+          );
+        });
+      }
 
       // Format the recipes with their ingredients and average rating
       const formattedRecipes = filteredRecipes.map(recipe => {
@@ -290,6 +308,45 @@ const Home = () => {
     }
   }, [location.state, recipes]);
 
+  useEffect(() => {
+    // Fetch all ingredients from the database
+    const fetchAllIngredients = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('ingredient')
+          .select('ingredientid, name')
+          .order('name');
+
+        if (error) throw error;
+
+        // Initialize availableIngredients state with all ingredients unchecked
+        const initialAvailableState = data.reduce((acc, ingredient) => {
+          acc[ingredient.name] = false;
+          return acc;
+        }, {});
+
+        setAllIngredients(data);
+        setAvailableIngredients(initialAvailableState);
+      } catch (error) {
+        console.error('Error fetching ingredients:', error);
+      }
+    };
+
+    fetchAllIngredients();
+  }, []);
+
+  const toggleIngredient = (ingredientName) => {
+    setAvailableIngredients(prev => {
+      const newState = {
+        ...prev,
+        [ingredientName]: !prev[ingredientName]
+      };
+      // Fetch recipes after updating the state
+      fetchRecipes();
+      return newState;
+    });
+  };
+
   return (
     <div className="home-container">
       <div 
@@ -308,6 +365,13 @@ const Home = () => {
               onKeyDown={(e) => e.key === 'Enter' && fetchRecipes()}
             />
             <button 
+              className="available-ingredients-button"
+              onClick={() => setShowAvailableIngredients(!showAvailableIngredients)}
+              aria-label="Available ingredients"
+            >
+              <i className="fas fa-apple-alt"></i>
+            </button>
+            <button 
               className="filter-button"
               onClick={() => setShowFilters(!showFilters)}
               aria-label="Filter recipes"
@@ -315,7 +379,31 @@ const Home = () => {
               <FontAwesomeIcon icon={faFilter} />
             </button>
           </div>
-
+          
+          {showAvailableIngredients && (
+            <div className="available-ingredients-panel" ref={availableIngredientsRef}>
+              <p className="panel-description">
+                Select ingredients you have at home
+              </p>
+              <div className="ingredients-grid">
+                {allIngredients.map((ingredient) => (
+                  <label 
+                    key={ingredient.ingredientid} 
+                    className="ingredient-checkbox available"
+                    data-ingredient={ingredient.name.toLowerCase()}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={availableIngredients[ingredient.name] || false}
+                      onChange={() => toggleIngredient(ingredient.name)}
+                    />
+                    {ingredient.name}
+                  </label>
+                ))}
+              </div>
+            </div>
+          )}
+          
           {showFilters && (
             <div className="filters-panel" ref={filterPanelRef}>
               <div className="filters-section">
