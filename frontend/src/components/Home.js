@@ -498,7 +498,7 @@ const Home = () => {
         </div>
       </div>
 
-      {(loading || recipes.length > 0) && (
+      
         <div className="content-section">
           <h2 className="section-title">Popular Recipes</h2>
           {loading ? (
@@ -555,7 +555,6 @@ const Home = () => {
             <div className="no-results">No recipes found. Try adjusting your search or filters.</div>
           )}
         </div>
-      )}
 
       {selectedRecipe && (
         <RecipeModal
