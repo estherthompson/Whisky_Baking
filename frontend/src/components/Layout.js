@@ -14,9 +14,6 @@ const Layout = ({ children }) => {
       <main className="main-content">
         {children}
       </main>
-      <footer className="footer">
-        <p>&copy; 2024 Whisky Baking. All rights reserved.</p>
-      </footer>
     </div>
   );
 };

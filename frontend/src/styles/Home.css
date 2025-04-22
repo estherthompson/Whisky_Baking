@@ -42,6 +42,7 @@
   padding: 10px 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
   position: relative;
+  gap: 10px;
 }
 
 .search-icon {
@@ -60,16 +61,15 @@
 .available-ingredients-button {
   background-color: #FFB6C1;
   border: none;
-  color: white;
-  cursor: pointer;
-  font-size: 1.1rem;
-  padding: 10px 15px;
-  border-radius: 25px;
-  margin-left: 10px;
-  transition: all 0.3s ease;
+  color: black;
   display: flex;
   align-items: center;
   justify-content: center;
+  border-radius: 20px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
 }
 
 .available-ingredients-button:hover {
@@ -168,15 +168,32 @@
   text-align: center;
 }
 
-.clear-button {
-  background-color: #FFC0CB;
-}
-
 .done-button:hover,
 .clear-button:hover {
   background-color: #FF8C9E;
   transform: translateY(-2px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.filter-button {
+  background-color: #f2e4d0;
+  border: none;
+  border-radius: 20px;
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.2s ease;
+}
+
+.filter-button:hover {
+  background-color: #e9cfa8;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.filter-button:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .done-button:active,

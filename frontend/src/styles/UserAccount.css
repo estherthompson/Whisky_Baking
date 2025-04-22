@@ -829,25 +829,6 @@
   margin-bottom: 20px;
 }
 
-.filter-button {
-  background-color: #f0f0f0;
-  border: none;
-  border-radius: 20px;
-  padding: 8px 16px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s ease;
-}
-
-.filter-button:hover {
-  background-color: #e0e0e0;
-}
-
-.filter-button.active {
-  background-color: #1976d2;
-  color: white;
-}
-
 .no-activity {
   text-align: center;
   padding: 40px 0;

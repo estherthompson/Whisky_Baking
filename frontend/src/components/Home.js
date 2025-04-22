@@ -6,7 +6,8 @@ import {
   faFilter,
   faStar,
   faClock,
-  faUtensils
+  faUtensils,
+  faAppleWhole 
 } from '@fortawesome/free-solid-svg-icons';
 import homeBanner from '../assets/images/home-banner.jpg';
 import { supabase } from '../supabaseClient';
@@ -74,17 +75,6 @@ const Home = () => {
 
   useEffect(() => {
     fetchIngredients();
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterPanelRef.current && !filterPanelRef.current.contains(event.target)) {
-        setShowFilters(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
   const handleIngredientToggle = (ingredient) => {
@@ -178,16 +168,18 @@ const Home = () => {
         .filter(([_, isSelected]) => isSelected)
         .map(([name]) => name.toLowerCase());
 
-      if (selectedIngredients.length > 0) {
-        filteredRecipes = filteredRecipes.filter(recipe => {
-          const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
-            ri.ingredient.name.toLowerCase()
-          ) || [];
-          return selectedIngredients.every(selectedIng => 
-            recipeIngredients.some(recipeIng => recipeIng.includes(selectedIng))
-          );
-        });
-      }
+        if (selectedIngredients.length > 0) {
+          filteredRecipes = filteredRecipes.filter(recipe => {
+            const recipeIngredients = recipe.recipe_ingredient?.map(ri =>
+              ri.ingredient.name.toLowerCase()
+            ) || [];
+        
+            // true only if every recipe ingredient is in selectedIngredients
+            return recipeIngredients.every(ingredient =>
+              selectedIngredients.includes(ingredient)
+            );
+          });
+        }
 
       // Format the recipes with their ingredients and average rating
       const formattedRecipes = filteredRecipes.map(recipe => {
@@ -345,15 +337,10 @@ const Home = () => {
   }, []);
 
   const toggleIngredient = (ingredientName) => {
-    setAvailableIngredients(prev => {
-      const newState = {
-        ...prev,
-        [ingredientName]: !prev[ingredientName]
-      };
-      // Fetch recipes after updating the state
-      fetchRecipes();
-      return newState;
-    });
+    setAvailableIngredients(prev => ({
+      ...prev,
+      [ingredientName]: !prev[ingredientName]
+    }));
   };
 
   const clearIngredients = () => {
@@ -378,30 +365,30 @@ const Home = () => {
       >
         <h1 className="hero-title">Baking is Whisk-Y Business</h1>
         <div className="search-container">
-          <div className="search-bar">
-            <FontAwesomeIcon icon={faSearch} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search recipes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchRecipes()}
-            />
-            <button 
-              className="available-ingredients-button"
-              onClick={() => setShowAvailableIngredients(!showAvailableIngredients)}
-              aria-label="Available ingredients"
-            >
-              <i className="fas fa-apple-alt"></i>
-            </button>
-            <button 
-              className="filter-button"
-              onClick={() => setShowFilters(!showFilters)}
-              aria-label="Filter recipes"
-            >
-              <FontAwesomeIcon icon={faFilter} />
-            </button>
-          </div>
+            <div className="search-bar">
+              <FontAwesomeIcon icon={faSearch} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search recipes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchRecipes()}
+              />
+              <button 
+                className="available-ingredients-button"
+                onClick={() => setShowAvailableIngredients(!showAvailableIngredients)}
+                aria-label="Available ingredients"
+              >
+                <FontAwesomeIcon icon={faAppleWhole} />
+              </button>
+              <button 
+                className="filter-button"
+                onClick={() => setShowFilters(showFilters => !showFilters)}
+                aria-label="Filter recipes"
+              >
+                <FontAwesomeIcon icon={faFilter} />
+              </button>
+            </div>
           
           {showAvailableIngredients && (
             <div className="available-ingredients-panel" ref={availableIngredientsRef}>
@@ -443,7 +430,10 @@ const Home = () => {
                 </button>
                 <button 
                   className="done-button"
-                  onClick={() => setShowAvailableIngredients(false)}
+                  onClick={() => {
+                    setShowAvailableIngredients(false)
+                    fetchRecipes();
+                    }}
                 >
                   Done
                 </button>
