@@ -1,4 +1,5 @@
 import supabase from '../config/supabaseClient.js';
+import { v4 as uuidv4 } from 'uuid'; // You'll need to install this package
 
 export const signup = async (req, res) => {
     try {
@@ -57,10 +58,6 @@ export const signup = async (req, res) => {
         }
 
         console.log('Auth user created successfully:', authData);
-        
-        // Extract the auth_id from the auth response
-        const auth_id = authData?.user?.id;
-        console.log('Extracted auth_id:', auth_id);
 
         // Create the user in our users table
         console.log('Attempting to create user in database...');
@@ -79,6 +76,10 @@ export const signup = async (req, res) => {
             }
 
             const nextUserId = lastUser ? lastUser.userid + 1 : 1;
+            
+            // Generate a random UUID for auth_id
+            const auth_id = uuidv4();
+            console.log('Generated UUID for auth_id:', auth_id);
 
             console.log('Attempting to insert user with ID:', nextUserId);
             const { data: userData, error: userError } = await supabase
@@ -91,7 +92,7 @@ export const signup = async (req, res) => {
                         password: password,
                         isadmin: false,
                         username: username,
-                        auth_id: auth_id // Add the auth_id from Supabase Auth
+                        auth_id: auth_id // Add the generated UUID
                     }
                 ])
                 .select();
@@ -155,21 +156,13 @@ export const login = async (req, res) => {
             return res.status(400).json({ error: 'Invalid credentials' });
         }
 
-        // Authenticate user with Supabase Auth using the email
-        console.log('Attempting to authenticate user:', userData.email);
-        const { data, error } = await supabase.auth.signInWithPassword({
-            email: userData.email,
-            password,
-        });
-
-        if (error) {
-            console.error('Auth Error:', error);
-            return res.status(400).json({ 
-                error: 'Authentication failed',
-                details: error.message
-            });
+        // Simple password check directly with stored password
+        if (userData.password !== password) {
+            console.log('Password mismatch');
+            return res.status(400).json({ error: 'Invalid credentials' });
         }
 
+        console.log('Login successful for user:', userData.email);
         res.status(200).json(userData);
     } catch (error) {
         console.error('Server Error:', error);
@@ -178,4 +171,4 @@ export const login = async (req, res) => {
             details: error.message
         });
     }
-}; 
+};

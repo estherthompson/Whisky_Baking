@@ -174,7 +174,7 @@ const Login = () => {
               <div className="success-message">
                 <div className="success-content">
                   <strong>Verification Email Sent!</strong>
-                  <p>Please check your email to verify your account. Once verified, you can login.</p>
+                  <p>You can now login to your account.</p>
                   <button 
                     className="toggle-btn"
                     onClick={() => {
