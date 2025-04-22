@@ -96,6 +96,47 @@
   max-height: 400px;
   overflow-y: auto;
   margin-top: 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.ingredient-search-container {
+  margin-bottom: 15px;
+  position: relative;
+}
+
+.ingredient-search-input {
+  width: 100%;
+  padding: 8px 12px;
+  padding-left: 32px;
+  border: 1px solid #ddd;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+.ingredient-search-input:focus {
+  border-color: #FFB6C1;
+  box-shadow: 0 0 0 2px rgba(255, 182, 193, 0.2);
+}
+
+.ingredient-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.ingredients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+  margin-bottom: 15px;
+  flex: 1;
+  overflow-y: auto;
 }
 
 .available-ingredients-panel .panel-description {
@@ -104,10 +145,44 @@
   font-size: 0.9em;
 }
 
-.available-ingredients-panel .ingredients-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+.button-container {
+  display: flex;
   gap: 10px;
+  margin-top: 10px;
+}
+
+.done-button,
+.clear-button {
+  background-color: #FFB6C1;
+  border: none;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 20px;
+  cursor: pointer;
+  font-family: 'Quicksand', 'Arial', sans-serif;
+  font-weight: 500;
+  font-size: 1rem;
+  letter-spacing: 1px;
+  transition: all 0.3s ease;
+  flex: 1;
+  text-align: center;
+}
+
+.clear-button {
+  background-color: #FFC0CB;
+}
+
+.done-button:hover,
+.clear-button:hover {
+  background-color: #FF8C9E;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.done-button:active,
+.clear-button:active {
+  transform: translateY(0);
+  box-shadow: none;
 }
 
 .available-ingredients-panel .ingredient-checkbox {
@@ -398,6 +473,12 @@
   font-size: 0.85rem;
   margin-bottom: 4px;
   padding: 0;
+  flex-wrap: wrap;
+}
+
+.recipe-author {
+  color: #666;
+  font-style: italic;
 }
 
 .recipe-card .recipe-description {
