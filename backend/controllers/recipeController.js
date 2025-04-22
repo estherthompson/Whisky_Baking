@@ -199,8 +199,17 @@ export const createRecipe = async (req, res) => {
 
 export const savedRecipe = async (req, res) => {
     try {
-        const { userid, recipeId, dateSaved } = req.body;
-        console.log('Received save recipe request:', req.body);
+        // Accept both parameter naming conventions for flexibility
+        const userid = req.body.userid || req.body.userId;
+        const recipeId = req.body.recipeId;
+        const dateSaved = req.body.dateSaved || req.body.datesaved;
+        
+        console.log('Received save recipe request:', {
+            userid,
+            recipeId,
+            dateSaved,
+            originalBody: req.body
+        });
 
         if (!userid || !recipeId) {
             return res.status(400).json({
@@ -571,8 +580,9 @@ export const debugGetUserRecipes = async (req, res) => {
 // Function to get all saved recipes for a specific user
 export const getSavedRecipes = async (req, res) => {
     try {
-        const userid = req.params.userid;
-        console.log('Getting saved recipes for userid:', userid);
+        // Fix parameter name to match route definition
+        const userid = req.params.userId; // Changed from 'userid' to 'userId' to match route
+        console.log('Getting saved recipes for userId:', userid);
         
         if (!userid) {
             return res.status(400).json({
@@ -595,7 +605,8 @@ export const getSavedRecipes = async (req, res) => {
                     description,
                     instructions,
                     recipetime,
-                    userid
+                    userid,
+                    imageurl
                 )
             `)
             .eq('userid', useridNum)
@@ -870,6 +881,60 @@ export const uploadRecipeImage = async (req, res) => {
     } catch (error) {
         console.error('Unexpected server error in uploadRecipeImage:', error);
         console.error('Error stack:', error.stack);
+        res.status(500).json({
+            error: 'An unexpected error occurred',
+            details: error.message
+        });
+    }
+};
+
+// Delete saved recipe
+export const deleteSavedRecipe = async (req, res) => {
+    try {
+        const userid = req.params.userId;
+        const recipeid = req.params.recipeId;
+        
+        console.log('Delete saved recipe request received:', {
+            userid,
+            recipeid,
+            params: req.params
+        });
+        
+        if (!userid || !recipeid) {
+            console.error('Missing required parameters:', { userid, recipeid });
+            return res.status(400).json({
+                error: 'User ID and Recipe ID are required'
+            });
+        }
+        
+        // Convert ids to numbers for consistency
+        const useridNum = parseInt(userid, 10);
+        const recipeidNum = parseInt(recipeid, 10);
+        
+        console.log('Converted IDs:', { useridNum, recipeidNum });
+        
+        // Delete the saved recipe
+        console.log(`Attempting to delete saved recipe where userid=${useridNum} and recipeid=${recipeidNum}`);
+        const { data, error } = await supabase
+            .from('saved_recipes')
+            .delete()
+            .eq('userid', useridNum)
+            .eq('recipeid', recipeidNum);
+        
+        if (error) {
+            console.error('Error deleting saved recipe:', error);
+            return res.status(400).json({
+                error: 'Failed to delete saved recipe',
+                details: error.message
+            });
+        }
+        
+        console.log('Delete operation successful, response:', data);
+        return res.status(200).json({
+            message: 'Recipe removed from saved recipes successfully'
+        });
+    } catch (error) {
+        console.error('Server error in deleteSavedRecipe:', error);
         res.status(500).json({
             error: 'An unexpected error occurred',
             details: error.message
