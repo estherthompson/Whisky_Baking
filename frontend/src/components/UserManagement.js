@@ -3,76 +3,14 @@ import axios from 'axios';
 import '../styles/UserManagement.css';
 
 const UserManagement = () => {
-  const [expandedUser, setExpandedUser] = useState(null);
-  const [showUsersTable, setShowUsersTable] = useState(false);
-  const [showRecipesTable, setShowRecipesTable] = useState(false);
   const [expandedRecipe, setExpandedRecipe] = useState(null);
   const [userCount, setUserCount] = useState(0);
   const [adminCount, setAdminCount] = useState(0);
   const [recipeCount, setRecipeCount] = useState(0);
+  const [pendingRecipes, setPendingRecipes] = useState([]);
+  const [pendingCount, setPendingCount] = useState(0);
+  const [loading, setLoading] = useState(false);
   
-  // Mock users data
-  const [users] = useState([
-    {
-      id: 1,
-      name: 'John Doe',
-      username: 'johndoe',
-      email: 'john@example.com',
-      bio: 'Passionate baker and whisky enthusiast. Love experimenting with new recipes!',
-      personalLinks: ['https://instagram.com/johndoe', 'https://twitter.com/johndoe'],
-      isApproved: true,
-      isAdmin: false
-    },
-    {
-      id: 2,
-      name: 'Jane Smith',
-      username: 'janesmith',
-      email: 'jane@example.com',
-      bio: 'Professional pastry chef with 10 years of experience. Specializing in whisky-infused desserts.',
-      personalLinks: ['https://instagram.com/janesmith', 'https://pinterest.com/janesmith'],
-      isApproved: false,
-      isAdmin: false
-    },
-    {
-      id: 3,
-      name: 'Admin User',
-      username: 'admin',
-      email: 'admin@example.com',
-      bio: 'Site administrator and content moderator.',
-      personalLinks: [],
-      isApproved: true,
-      isAdmin: true
-    }
-  ]);
-  
-  // Mock recipes data
-  const [recipes] = useState([
-    {
-      id: 1,
-      name: 'Whisky Brownie',
-      author: 'John Doe',
-      description: 'Rich chocolate brownies infused with premium whisky.',
-      ingredients: ['Chocolate', 'Flour', 'Sugar', 'Eggs', 'Whisky'],
-      isApproved: true
-    },
-    {
-      id: 2,
-      name: 'Bourbon Cake',
-      author: 'Jane Smith',
-      description: 'Moist vanilla cake with bourbon glaze.',
-      ingredients: ['Flour', 'Sugar', 'Butter', 'Eggs', 'Bourbon'],
-      isApproved: false
-    },
-    {
-      id: 3,
-      name: 'Scotch Cookies',
-      author: 'John Doe',
-      description: 'Buttery cookies with a hint of scotch.',
-      ingredients: ['Flour', 'Butter', 'Sugar', 'Scotch'],
-      isApproved: false
-    }
-  ]);
-
   // Fetch stats from API
   useEffect(() => {
     const fetchStats = async () => {
@@ -97,6 +35,9 @@ const UserManagement = () => {
         if (recipesResponse.data && recipesResponse.data.totalRecipes) {
           setRecipeCount(recipesResponse.data.totalRecipes);
         }
+        
+        // Fetch pending recipes
+        fetchPendingRecipes();
       } catch (error) {
         console.error('Error fetching stats:', error);
       }
@@ -104,31 +45,35 @@ const UserManagement = () => {
 
     fetchStats();
   }, []);
-
-  // Calculate stats
-  const totalUsers = userCount || users.length;
-  const pendingApprovals = users.filter(user => !user.isApproved).length;
-  const totalAdmins = adminCount || users.filter(user => user.isAdmin).length;
-  const totalRecipes = recipeCount || recipes.length;
   
-  const handleApproveUser = (userId) => {
-    console.log('Approve user:', userId);
+  // Fetch pending recipes
+  const fetchPendingRecipes = async () => {
+    setLoading(true);
+    try {
+      const response = await axios.get('http://localhost:5001/api/admin/pending-recipes');
+      console.log('Pending recipes:', response.data);
+      
+      if (response.data && response.data.recipes) {
+        setPendingRecipes(response.data.recipes);
+        setPendingCount(response.data.recipes.length);
+      }
+    } catch (error) {
+      console.error('Error fetching pending recipes:', error);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleRejectUser = (userId) => {
-    console.log('Reject user:', userId);
-  };
-  
-  const handleApproveRecipe = (recipeId) => {
-    console.log('Approve recipe:', recipeId);
-  };
-
-  const handleRejectRecipe = (recipeId) => {
-    console.log('Reject recipe:', recipeId);
-  };
-
-  const toggleUserDetails = (userId) => {
-    setExpandedUser(expandedUser === userId ? null : userId);
+  const handleApproveRecipe = async (recipeId) => {
+    try {
+      const response = await axios.put(`http://localhost:5001/api/admin/recipes/${recipeId}/approve`);
+      console.log('Recipe approved:', response.data);
+      
+      // Refresh the pending recipes
+      fetchPendingRecipes();
+    } catch (error) {
+      console.error('Error approving recipe:', error);
+    }
   };
   
   const toggleRecipeDetails = (recipeId) => {
@@ -141,147 +86,124 @@ const UserManagement = () => {
       <div className="stats-section">
         <div className="stat-card">
           <h3>Users</h3>
-          <p className="stat-number">{totalUsers}</p>
+          <p className="stat-number">{userCount}</p>
         </div>
         <div className="stat-card">
-          <h3>Pending</h3>
-          <p className="stat-number">{pendingApprovals}</p>
+          <h3>Pending Recipes</h3>
+          <p className="stat-number">{pendingCount}</p>
         </div>
         <div className="stat-card">
           <h3>Recipes</h3>
-          <p className="stat-number">{totalRecipes}</p>
+          <p className="stat-number">{recipeCount}</p>
         </div>
         <div className="stat-card">
           <h3>Admins</h3>
-          <p className="stat-number">{totalAdmins}</p>
+          <p className="stat-number">{adminCount}</p>
         </div>
       </div>
+      
+      {/* Recipes Section */}
+      <div className="recipes-section">
+        <h2>Recipe Approval Management</h2>
+        
+        <div className="users-card-container">
+          {loading ? (
+            <div className="loading">Loading pending recipes...</div>
+          ) : pendingRecipes && pendingRecipes.length > 0 ? (
+            pendingRecipes.map(recipe => (
+              <div key={recipe.recipeid} className="user-card">
+                <div 
+                  className="user-header"
+                  onClick={() => toggleRecipeDetails(recipe.recipeid)}
+                >
+                  <div className="user-name">{recipe.name || 'Unnamed Recipe'}</div>
+                  <div className="user-status">
+                    <span className="status-badge pending">Pending Approval</span>
+                  </div>
+                </div>
+                
+                {expandedRecipe === recipe.recipeid && (
+                  <div className="user-details">
+                    <div className="recipe-content">
+                      <div className="recipe-info-grid">
+                        <div className="recipe-info-item">
+                          <strong>Recipe ID:</strong> {recipe.recipeid}
+                        </div>
+                        <div className="recipe-info-item">
+                          <strong>User ID:</strong> {recipe.userid || 'Unknown'}
+                        </div>
+                        <div className="recipe-info-item">
+                          <strong>Prep Time:</strong> {recipe.recipetime || 'Not specified'} minutes
+                        </div>
+                      </div>
 
-      {/* Users Dropdown Toggle */}
-      <div className="users-dropdown-toggle first-dropdown" onClick={() => setShowUsersTable(!showUsersTable)}>
-        <h3>User Profile Management {showUsersTable ? '▲' : '▼'}</h3>
-      </div>
-      
-      {/* Users Table (Collapsible) */}
-      {showUsersTable && (
-        <div className="users-card-container">
-          {users.map(user => (
-            <div key={user.id} className="user-card">
-              <div 
-                className="user-header"
-                onClick={() => toggleUserDetails(user.id)}
-              >
-                <div className="user-name">{user.name}</div>
-                <div className="user-status">
-                  <span className={`status-badge ${user.isApproved ? 'approved' : 'pending'}`}>
-                    {user.isApproved ? 'Approved' : 'Pending'}
-                  </span>
-                </div>
+                      <h3 className="recipe-section-title">Description</h3>
+                      <div className="recipe-description">{recipe.description || 'No description available'}</div>
+                      
+                      <h3 className="recipe-section-title">Ingredients</h3>
+                      <div className="recipe-ingredients">
+                        {recipe.ingredients ? (
+                          <ul className="ingredients-list">
+                            {Array.isArray(recipe.ingredients) ? (
+                              recipe.ingredients.map((ingredient, index) => (
+                                <li key={index}>{typeof ingredient === 'object' ? ingredient.name || JSON.stringify(ingredient) : ingredient}</li>
+                              ))
+                            ) : typeof recipe.ingredients === 'object' ? (
+                              Object.entries(recipe.ingredients).map(([key, value], index) => (
+                                <li key={index}>{typeof value === 'object' ? value.name || JSON.stringify(value) : value}</li>
+                              ))
+                            ) : (
+                              <li>Ingredients format not recognized</li>
+                            )}
+                          </ul>
+                        ) : (
+                          <p>No ingredients information available</p>
+                        )}
+                      </div>
+                      
+                      <h3 className="recipe-section-title">Instructions</h3>
+                      <div className="recipe-instructions">
+                        {recipe.instructions ? (
+                          <div>
+                            {Array.isArray(recipe.instructions) ? (
+                              <ol className="instructions-list">
+                                {recipe.instructions.map((step, index) => (
+                                  <li key={index}>{step}</li>
+                                ))}
+                              </ol>
+                            ) : (
+                              <p>{recipe.instructions}</p>
+                            )}
+                          </div>
+                        ) : (
+                          <p>No instructions available</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    <div className="user-actions">
+                      <button 
+                        className="approve-btn"
+                        onClick={() => handleApproveRecipe(recipe.recipeid)}
+                      >
+                        Approve Recipe
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              {expandedUser === user.id && (
-                <div className="user-details">
-                  <div className="user-email">{user.email}</div>
-                  <div className="user-username">@{user.username}</div>
-                  <div className="user-bio">{user.bio}</div>
-                  <div className="user-links">
-                    {user.personalLinks.length > 0 ? (
-                      <ul>
-                        {user.personalLinks.map((link, index) => (
-                          <li key={index}>
-                            <a href={link} target="_blank" rel="noopener noreferrer">
-                              {link}
-                            </a>
-                          </li>
-                        ))}
-                      </ul>
-                    ) : (
-                      <span className="no-links">No links provided</span>
-                    )}
-                  </div>
-                  <div className="user-actions">
-                    {!user.isApproved && (
-                      <>
-                        <button 
-                          className="approve-btn"
-                          onClick={() => handleApproveUser(user.id)}
-                        >
-                          Approve
-                        </button>
-                        <button 
-                          className="reject-btn"
-                          onClick={() => handleRejectUser(user.id)}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
+            ))
+          ) : (
+            <div className="no-pending">
+              <p>No pending recipes found</p>
+              <p>Recipes pending approval will appear here</p>
+              <button onClick={fetchPendingRecipes} className="refresh-btn">
+                Refresh
+              </button>
             </div>
-          ))}
+          )}
         </div>
-      )}
-      
-      {/* Recipes Dropdown Toggle */}
-      <div className="users-dropdown-toggle" onClick={() => setShowRecipesTable(!showRecipesTable)}>
-        <h3>Recipe Management {showRecipesTable ? '▲' : '▼'}</h3>
       </div>
-      
-      {/* Recipes Table (Collapsible) */}
-      {showRecipesTable && (
-        <div className="users-card-container">
-          {recipes.map(recipe => (
-            <div key={recipe.id} className="user-card">
-              <div 
-                className="user-header"
-                onClick={() => toggleRecipeDetails(recipe.id)}
-              >
-                <div className="user-name">{recipe.name}</div>
-                <div className="user-status">
-                  <span className={`status-badge ${recipe.isApproved ? 'approved' : 'pending'}`}>
-                    {recipe.isApproved ? 'Approved' : 'Pending'}
-                  </span>
-                </div>
-              </div>
-              
-              {expandedRecipe === recipe.id && (
-                <div className="user-details">
-                  <div className="recipe-author">By: {recipe.author}</div>
-                  <div className="recipe-description">{recipe.description}</div>
-                  <div className="recipe-ingredients">
-                    <h4>Ingredients:</h4>
-                    <ul>
-                      {recipe.ingredients.map((ingredient, index) => (
-                        <li key={index}>{ingredient}</li>
-                      ))}
-                    </ul>
-                  </div>
-                  <div className="user-actions">
-                    {!recipe.isApproved && (
-                      <>
-                        <button 
-                          className="approve-btn"
-                          onClick={() => handleApproveRecipe(recipe.id)}
-                        >
-                          Approve
-                        </button>
-                        <button 
-                          className="reject-btn"
-                          onClick={() => handleRejectRecipe(recipe.id)}
-                        >
-                          Reject
-                        </button>
-                      </>
-                    )}
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };
