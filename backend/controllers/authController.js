@@ -57,6 +57,10 @@ export const signup = async (req, res) => {
         }
 
         console.log('Auth user created successfully:', authData);
+        
+        // Extract the auth_id from the auth response
+        const auth_id = authData?.user?.id;
+        console.log('Extracted auth_id:', auth_id);
 
         // Create the user in our users table
         console.log('Attempting to create user in database...');
@@ -87,6 +91,7 @@ export const signup = async (req, res) => {
                         password: password,
                         isadmin: false,
                         username: username,
+                        auth_id: auth_id // Add the auth_id from Supabase Auth
                     }
                 ])
                 .select();

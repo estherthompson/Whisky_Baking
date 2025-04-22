@@ -11,37 +11,63 @@ import {
 import homeBanner from '../assets/images/home-banner.jpg';
 import { supabase } from '../supabaseClient';
 import RecipeModal from './RecipeModal';
+import { useLocation } from 'react-router-dom';
 
 const Home = () => {
   const [recipes, setRecipes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showFilters, setShowFilters] = useState(false);
+  const [showAvailableIngredients, setShowAvailableIngredients] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [ingredients, setIngredients] = useState([]);
   const [excludedIngredients, setExcludedIngredients] = useState({});
+  const [dietaryRestrictions, setDietaryRestrictions] = useState([]);
+  const [selectedRestrictions, setSelectedRestrictions] = useState({});
+  const [availableIngredients, setAvailableIngredients] = useState({});
+  const [allIngredients, setAllIngredients] = useState([]);
   const filterPanelRef = useRef(null);
+  const availableIngredientsRef = useRef(null);
+  const location = useLocation();
 
-  // Fetch all ingredients from the database
+  // Fetch all ingredients and dietary restrictions from the database
   const fetchIngredients = async () => {
     try {
-      const { data, error } = await supabase
+      // Fetch ingredients
+      const { data: ingredientData, error: ingredientError } = await supabase
         .from('ingredient')
-        .select('ingredientid, name')
+        .select('ingredientid, name, dietary_restriction_ingredient(dietary_restriction(name))')
         .order('name');
 
-      if (error) throw error;
+      if (ingredientError) throw ingredientError;
 
       // Initialize excludedIngredients state with all ingredients unchecked
-      const initialExcludedState = data.reduce((acc, ingredient) => {
+      const initialExcludedState = ingredientData.reduce((acc, ingredient) => {
         acc[ingredient.name] = true;
         return acc;
       }, {});
 
-      setIngredients(data);
+      setIngredients(ingredientData);
       setExcludedIngredients(initialExcludedState);
+
+      // Fetch dietary restrictions
+      const { data: restrictionData, error: restrictionError } = await supabase
+        .from('dietary_restriction')
+        .select('*')
+        .order('name');
+
+      if (restrictionError) throw restrictionError;
+
+      // Initialize selectedRestrictions state with all restrictions unchecked
+      const initialRestrictionsState = restrictionData.reduce((acc, restriction) => {
+        acc[restriction.name] = false;
+        return acc;
+      }, {});
+
+      setDietaryRestrictions(restrictionData);
+      setSelectedRestrictions(initialRestrictionsState);
     } catch (error) {
-      console.error('Error fetching ingredients:', error);
+      console.error('Error fetching data:', error);
     }
   };
 
@@ -67,6 +93,29 @@ const Home = () => {
     }));
   };
 
+  const handleRestrictionToggle = (restrictionName) => {
+    setSelectedRestrictions(prev => ({
+      ...prev,
+      [restrictionName]: !prev[restrictionName]
+    }));
+
+    // Get ingredients associated with this restriction
+    const restrictedIngredients = ingredients.filter(ingredient => 
+      ingredient.dietary_restriction_ingredient?.some(dri => 
+        dri.dietary_restriction.name === restrictionName
+      )
+    ).map(ingredient => ingredient.name);
+
+    // Update excluded ingredients based on the restriction
+    setExcludedIngredients(prev => {
+      const newState = { ...prev };
+      restrictedIngredients.forEach(ingredient => {
+        newState[ingredient] = false;
+      });
+      return newState;
+    });
+  };
+
   const fetchRecipes = async () => {
     try {
       setLoading(true);
@@ -87,7 +136,8 @@ const Home = () => {
           rating (
             score
           )
-        `);
+        `)
+        .eq('is_approved', true); // Only fetch approved recipes
 
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
@@ -99,15 +149,13 @@ const Home = () => {
         throw error;
       }
 
-      console.log("data:", data)
-
       // Filter out recipes that contain excluded ingredients
       const uncheckedIngredients = Object.entries(excludedIngredients)
         .filter(([_, isChecked]) => !isChecked)  // Get unchecked ingredients
         .map(([ingredient]) => ingredient.toLowerCase());
 
       // If no ingredients are unchecked, show all recipes
-      const filteredRecipes = uncheckedIngredients.length === 0
+      let filteredRecipes = uncheckedIngredients.length === 0
         ? data // Show all recipes if no ingredients are unchecked
         : data.filter(recipe => {
             const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
@@ -121,6 +169,22 @@ const Home = () => {
               )
             );
           });
+
+      // Filter recipes based on selected available ingredients
+      const selectedIngredients = Object.entries(availableIngredients)
+        .filter(([_, isSelected]) => isSelected)
+        .map(([name]) => name.toLowerCase());
+
+      if (selectedIngredients.length > 0) {
+        filteredRecipes = filteredRecipes.filter(recipe => {
+          const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
+            ri.ingredient.name.toLowerCase()
+          ) || [];
+          return selectedIngredients.every(selectedIng => 
+            recipeIngredients.some(recipeIng => recipeIng.includes(selectedIng))
+          );
+        });
+      }
 
       // Format the recipes with their ingredients and average rating
       const formattedRecipes = filteredRecipes.map(recipe => {
@@ -193,6 +257,7 @@ const Home = () => {
           )
         `)
         .eq('recipeid', recipe.recipeid)
+        .eq('is_approved', true) // Only get approved recipes
         .single();
 
       if (error) {
@@ -231,6 +296,57 @@ const Home = () => {
     }
   };
 
+  // Effect to handle opening recipe modal from navigation state
+  useEffect(() => {
+    if (location.state?.openRecipeId) {
+      const recipeId = location.state.openRecipeId;
+      const recipe = recipes.find(r => r.recipeid === recipeId);
+      if (recipe) {
+        console.log('Opening recipe modal with draft review:', location.state.draftReview);
+        handleRecipeClick(recipe);
+      }
+    }
+  }, [location.state, recipes]);
+
+  useEffect(() => {
+    // Fetch all ingredients from the database
+    const fetchAllIngredients = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('ingredient')
+          .select('ingredientid, name')
+          .order('name');
+
+        if (error) throw error;
+
+        // Initialize availableIngredients state with all ingredients unchecked
+        const initialAvailableState = data.reduce((acc, ingredient) => {
+          acc[ingredient.name] = false;
+          return acc;
+        }, {});
+
+        setAllIngredients(data);
+        setAvailableIngredients(initialAvailableState);
+      } catch (error) {
+        console.error('Error fetching ingredients:', error);
+      }
+    };
+
+    fetchAllIngredients();
+  }, []);
+
+  const toggleIngredient = (ingredientName) => {
+    setAvailableIngredients(prev => {
+      const newState = {
+        ...prev,
+        [ingredientName]: !prev[ingredientName]
+      };
+      // Fetch recipes after updating the state
+      fetchRecipes();
+      return newState;
+    });
+  };
+
   return (
     <div className="home-container">
       <div 
@@ -246,8 +362,15 @@ const Home = () => {
               placeholder="Search recipes..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyPress={(e) => e.key === 'Enter' && fetchRecipes()}
+              onKeyDown={(e) => e.key === 'Enter' && fetchRecipes()}
             />
+            <button 
+              className="available-ingredients-button"
+              onClick={() => setShowAvailableIngredients(!showAvailableIngredients)}
+              aria-label="Available ingredients"
+            >
+              <i className="fas fa-apple-alt"></i>
+            </button>
             <button 
               className="filter-button"
               onClick={() => setShowFilters(!showFilters)}
@@ -256,25 +379,70 @@ const Home = () => {
               <FontAwesomeIcon icon={faFilter} />
             </button>
           </div>
-
-          {showFilters && (
-            <div className="filters-panel" ref={filterPanelRef}>
-              <h2>Exclude Ingredients</h2>
+          
+          {showAvailableIngredients && (
+            <div className="available-ingredients-panel" ref={availableIngredientsRef}>
+              <p className="panel-description">
+                Select ingredients you have at home
+              </p>
               <div className="ingredients-grid">
-                {ingredients.map((ingredient) => (
+                {allIngredients.map((ingredient) => (
                   <label 
                     key={ingredient.ingredientid} 
-                    className="ingredient-checkbox"
+                    className="ingredient-checkbox available"
                     data-ingredient={ingredient.name.toLowerCase()}
                   >
                     <input
                       type="checkbox"
-                      checked={excludedIngredients[ingredient.name]}
-                      onChange={() => handleIngredientToggle(ingredient.name)}
+                      checked={availableIngredients[ingredient.name] || false}
+                      onChange={() => toggleIngredient(ingredient.name)}
                     />
                     {ingredient.name}
                   </label>
                 ))}
+              </div>
+            </div>
+          )}
+          
+          {showFilters && (
+            <div className="filters-panel" ref={filterPanelRef}>
+              <div className="filters-section">
+                <h2>Dietary Restrictions</h2>
+                <div className="restrictions-grid">
+                  {dietaryRestrictions.map((restriction) => (
+                    <label 
+                      key={restriction.restrictionid} 
+                      className="restriction-checkbox"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedRestrictions[restriction.name]}
+                        onChange={() => handleRestrictionToggle(restriction.name)}
+                      />
+                      {restriction.name}
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div className="filters-section">
+                <h2>Exclude Ingredients</h2>
+                <div className="ingredients-grid">
+                  {ingredients.map((ingredient) => (
+                    <label 
+                      key={ingredient.ingredientid} 
+                      className="ingredient-checkbox"
+                      data-ingredient={ingredient.name.toLowerCase()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={excludedIngredients[ingredient.name]}
+                        onChange={() => handleIngredientToggle(ingredient.name)}
+                      />
+                      {ingredient.name}
+                    </label>
+                  ))}
+                </div>
               </div>
             </div>
           )}
@@ -347,6 +515,8 @@ const Home = () => {
             console.log('Closing modal');
             setSelectedRecipe(null);
           }}
+          initialShowReviewForm={!!location.state?.draftReview}
+          draftReview={location.state?.draftReview}
         />
       )}
     </div>

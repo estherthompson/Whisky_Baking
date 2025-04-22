@@ -41,6 +41,7 @@
   border-radius: 50px;
   padding: 10px 20px;
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  position: relative;
 }
 
 .search-icon {
@@ -56,14 +57,117 @@
   padding: 10px;
 }
 
-.filter-button {
-  background: none;
+.available-ingredients-button {
+  background-color: #FFB6C1;
   border: none;
-  color: #666;
+  color: white;
   cursor: pointer;
-  padding: 10px;
   font-size: 1.1rem;
+  padding: 10px 15px;
+  border-radius: 25px;
+  margin-left: 10px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
+
+.available-ingredients-button:hover {
+  background-color: #FF8C9E;
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.available-ingredients-button:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.available-ingredients-panel {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  background: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  width: 300px;
+  max-height: 400px;
+  overflow-y: auto;
+  margin-top: 10px;
+}
+
+.available-ingredients-panel .panel-description {
+  margin-bottom: 15px;
+  color: #666;
+  font-size: 0.9em;
+}
+
+.available-ingredients-panel .ingredients-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.available-ingredients-panel .ingredient-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  background-color: #FFE4E1; /* Light pink */
+}
+
+.available-ingredients-panel .ingredient-checkbox:hover {
+  background-color: #FFD1D1; /* Slightly darker pink */
+  transform: translateY(-2px);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+}
+
+.available-ingredients-panel .ingredient-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.available-ingredients-panel .ingredient-checkbox input[type="checkbox"]:checked {
+  accent-color: #FFB6C1; /* Pastel pink */
+}
+
+/* Random pastel colors for available ingredients */
+.available-ingredients-panel .ingredient-checkbox:nth-child(1) { background-color: #FFE4E1; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(2) { background-color: #E6E6FA; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(3) { background-color: #E0FFFF; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(4) { background-color: #F0FFF0; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(5) { background-color: #FFF0F5; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(6) { background-color: #F5F5DC; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(7) { background-color: #F0F8FF; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(8) { background-color: #FDF5E6; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(9) { background-color: #FFE4B5; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(10) { background-color: #FFDAB9; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(11) { background-color: #E6E6FA; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(12) { background-color: #FFF0F5; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(13) { background-color: #F0FFF0; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(14) { background-color: #F5F5DC; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(15) { background-color: #F0F8FF; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(16) { background-color: #FDF5E6; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(17) { background-color: #FFE4B5; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(18) { background-color: #FFDAB9; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(19) { background-color: #E6E6FA; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(20) { background-color: #FFF0F5; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(21) { background-color: #F0FFF0; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(22) { background-color: #F5F5DC; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(23) { background-color: #F0F8FF; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(24) { background-color: #FDF5E6; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(25) { background-color: #FFE4B5; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(26) { background-color: #FFDAB9; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(27) { background-color: #E6E6FA; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(28) { background-color: #FFF0F5; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(29) { background-color: #F0FFF0; }
+.available-ingredients-panel .ingredient-checkbox:nth-child(30) { background-color: #F5F5DC; }
 
 /* Filters Panel Styles */
 .filters-panel {
@@ -86,75 +190,117 @@
   text-align: center;
 }
 
-.ingredients-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 12px;
-  padding: 10px;
+.filters-section {
+  margin-bottom: 20px;
 }
 
-.ingredient-checkbox {
+.filters-section h2 {
+  margin-bottom: 15px;
+  color: #333;
+  font-size: 1.2em;
+}
+
+.ingredients-grid,
+.restrictions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.filters-panel .ingredient-checkbox,
+.restriction-checkbox {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 16px;
-  border-radius: 12px;
+  gap: 8px;
+  padding: 8px;
+  border-radius: 4px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-weight: 500;
-  color: #4a5568;
-  background-color: #F0F7FF;
+  transition: all 0.3s ease;
+  min-height: 40px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
-.ingredient-checkbox:hover {
+.filters-panel .ingredient-checkbox:hover,
+.restriction-checkbox:hover {
   transform: translateY(-2px);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
 
-.ingredient-checkbox input[type="checkbox"] {
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  border: 2px solid #CBD5E0;
+.filters-panel .ingredient-checkbox input[type="checkbox"],
+.restriction-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
   cursor: pointer;
-  appearance: none;
-  -webkit-appearance: none;
-  position: relative;
-  background: white;
-  transition: all 0.2s ease;
+  flex-shrink: 0;
 }
 
-.ingredient-checkbox input[type="checkbox"]:checked {
-  background-color: #FF69B4;
-  border-color: #FF69B4;
+.filters-panel .ingredient-checkbox span,
+.restriction-checkbox span {
+  flex: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.ingredient-checkbox input[type="checkbox"]:checked::after {
-  content: '✓';
-  position: absolute;
-  color: white;
-  font-size: 14px;
-  left: 4px;
-  top: 0;
+/* Random pastel colors for filter ingredients */
+.filters-panel .ingredient-checkbox:nth-child(1) { background-color: #E0FFFF; }
+.filters-panel .ingredient-checkbox:nth-child(2) { background-color: #F0FFF0; }
+.filters-panel .ingredient-checkbox:nth-child(3) { background-color: #FFF0F5; }
+.filters-panel .ingredient-checkbox:nth-child(4) { background-color: #F5F5DC; }
+.filters-panel .ingredient-checkbox:nth-child(5) { background-color: #F0F8FF; }
+.filters-panel .ingredient-checkbox:nth-child(6) { background-color: #FDF5E6; }
+.filters-panel .ingredient-checkbox:nth-child(7) { background-color: #FFE4B5; }
+.filters-panel .ingredient-checkbox:nth-child(8) { background-color: #FFDAB9; }
+.filters-panel .ingredient-checkbox:nth-child(9) { background-color: #E6E6FA; }
+.filters-panel .ingredient-checkbox:nth-child(10) { background-color: #FFF0F5; }
+.filters-panel .ingredient-checkbox:nth-child(11) { background-color: #F0FFF0; }
+.filters-panel .ingredient-checkbox:nth-child(12) { background-color: #F5F5DC; }
+.filters-panel .ingredient-checkbox:nth-child(13) { background-color: #F0F8FF; }
+.filters-panel .ingredient-checkbox:nth-child(14) { background-color: #FDF5E6; }
+.filters-panel .ingredient-checkbox:nth-child(15) { background-color: #FFE4B5; }
+.filters-panel .ingredient-checkbox:nth-child(16) { background-color: #FFDAB9; }
+.filters-panel .ingredient-checkbox:nth-child(17) { background-color: #E6E6FA; }
+.filters-panel .ingredient-checkbox:nth-child(18) { background-color: #FFF0F5; }
+.filters-panel .ingredient-checkbox:nth-child(19) { background-color: #F0FFF0; }
+.filters-panel .ingredient-checkbox:nth-child(20) { background-color: #F5F5DC; }
+.filters-panel .ingredient-checkbox:nth-child(21) { background-color: #F0F8FF; }
+.filters-panel .ingredient-checkbox:nth-child(22) { background-color: #FDF5E6; }
+.filters-panel .ingredient-checkbox:nth-child(23) { background-color: #FFE4B5; }
+.filters-panel .ingredient-checkbox:nth-child(24) { background-color: #FFDAB9; }
+.filters-panel .ingredient-checkbox:nth-child(25) { background-color: #E6E6FA; }
+.filters-panel .ingredient-checkbox:nth-child(26) { background-color: #FFF0F5; }
+.filters-panel .ingredient-checkbox:nth-child(27) { background-color: #F0FFF0; }
+.filters-panel .ingredient-checkbox:nth-child(28) { background-color: #F5F5DC; }
+.filters-panel .ingredient-checkbox:nth-child(29) { background-color: #F0F8FF; }
+.filters-panel .ingredient-checkbox:nth-child(30) { background-color: #FDF5E6; }
+
+/* Random pastel colors for dietary restrictions */
+.restriction-checkbox:nth-child(1) { background-color: #FFE4B5; }
+.restriction-checkbox:nth-child(2) { background-color: #FFDAB9; }
+.restriction-checkbox:nth-child(3) { background-color: #E6E6FA; }
+.restriction-checkbox:nth-child(4) { background-color: #FFF0F5; }
+.restriction-checkbox:nth-child(5) { background-color: #F0FFF0; }
+.restriction-checkbox:nth-child(6) { background-color: #F5F5DC; }
+.restriction-checkbox:nth-child(7) { background-color: #F0F8FF; }
+.restriction-checkbox:nth-child(8) { background-color: #FDF5E6; }
+.restriction-checkbox:nth-child(9) { background-color: #FFE4B5; }
+.restriction-checkbox:nth-child(10) { background-color: #FFDAB9; }
+.restriction-checkbox:nth-child(11) { background-color: #E6E6FA; }
+.restriction-checkbox:nth-child(12) { background-color: #FFF0F5; }
+.restriction-checkbox:nth-child(13) { background-color: #F0FFF0; }
+.restriction-checkbox:nth-child(14) { background-color: #F5F5DC; }
+.restriction-checkbox:nth-child(15) { background-color: #F0F8FF; }
+
+/* Specific ingredient colors */
+.ingredient-checkbox[data-ingredient="white chocolate"] {
+  background-color: #FFF5E6;
 }
 
-/* Different pastel backgrounds for ingredient types */
-.ingredient-checkbox[data-ingredient="eggs"] { background-color: #FFE5E5; }
-.ingredient-checkbox[data-ingredient="milk"] { background-color: #E5F3FF; }
-.ingredient-checkbox[data-ingredient="butter"] { background-color: #FFF2E5; }
-.ingredient-checkbox[data-ingredient="flour"] { background-color: #F5E5FF; }
-.ingredient-checkbox[data-ingredient="sugar"] { background-color: #E5FFE5; }
-.ingredient-checkbox[data-ingredient="baking powder"] { background-color: #FFE5F3; }
-.ingredient-checkbox[data-ingredient="salt"] { background-color: #E5FFFF; }
-.ingredient-checkbox[data-ingredient="vanilla extract"] { background-color: #FFF5E5; }
-.ingredient-checkbox[data-ingredient="chocolate"] { background-color: #F2E5FF; }
-.ingredient-checkbox[data-ingredient="nuts"] { background-color: #FFE5E8; }
-.ingredient-checkbox[data-ingredient="fruit"] { background-color: #E5FFF2; }
-.ingredient-checkbox[data-ingredient="vegetables"] { background-color: #E8FFE5; }
-.ingredient-checkbox[data-ingredient="cream"] { background-color: #FFF0E5; }
-.ingredient-checkbox[data-ingredient="yeast"] { background-color: #E5FFE8; }
-.ingredient-checkbox[data-ingredient="cinnamon"] { background-color: #FFE8E5; }
-.ingredient-checkbox[data-ingredient="honey"] { background-color: #FFF8E5; }
+.ingredient-checkbox[data-ingredient="whole wheat flour"] {
+  background-color: #F5E6D3;
+}
 
 /* Content Section Styles */
 .content-section {

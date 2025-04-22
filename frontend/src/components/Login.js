@@ -89,13 +89,26 @@ const Login = () => {
         localStorage.setItem('user', JSON.stringify(response.data));
         console.log('Login successful, user stored in localStorage');
         
-        // Get any pending review data again (in case it was updated)
-        const pendingReviewData = sessionStorage.getItem('pendingReview');
+        // Check for draft review
+        const draftReviewString = localStorage.getItem('draftReview');
+        if (draftReviewString) {
+          const draftReview = JSON.parse(draftReviewString);
+          // Navigate to home page with state to open the recipe modal
+          navigate('/', { 
+            state: { 
+              openRecipeId: draftReview.recipeId,
+              draftReview: {
+                rating: draftReview.rating,
+                reviewText: draftReview.reviewText
+              }
+            }
+          });
+          return;
+        }
         
-        // Handle the redirection
-        handlePostLoginRedirect(pendingReviewData);
+        // If no draft review, go to default page
+        navigate('/user-account');
       } else {
-        // Signup flow remains unchanged
         const signupData = {
           email: formData.email,
           password: formData.password,

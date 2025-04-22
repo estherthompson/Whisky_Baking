@@ -14,13 +14,13 @@ import {
 import savedIcon from '../assets/icons/saved_home.png';
 import axios from 'axios';
 
-const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false }) => {
+const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftReview }) => {
   const navigate = useNavigate();
   const [saveMessage, setSaveMessage] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-  const [showReviewForm, setShowReviewForm] = useState(initialShowReviewForm);
-  const [reviewText, setReviewText] = useState(recipe?._reviewData?.reviewText || '');
-  const [rating, setRating] = useState(recipe?._reviewData?.rating || 0);
+  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [reviewText, setReviewText] = useState('');
+  const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [isSubmittingReview, setIsSubmittingReview] = useState(false);
   const [reviewMessage, setReviewMessage] = useState(null);
@@ -206,6 +206,14 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false }) => {
       });
       return;
     }
+
+    if (!reviewText.trim()) {
+      setReviewMessage({
+        type: 'error',
+        text: 'Please write a review'
+      });
+      return;
+    }
     
     setIsSubmittingReview(true);
     
@@ -214,19 +222,22 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false }) => {
       const userString = localStorage.getItem('user');
       
       if (!userString) {
-        // Save the current recipe and review info to sessionStorage before redirecting
-        sessionStorage.setItem('pendingReview', JSON.stringify({
+        console.log('User not logged in, saving draft and redirecting to login');
+        // Save the current recipe and review info to localStorage
+        const draftData = {
           recipeId: recipe.recipeid,
           recipeName: recipe.name,
           rating: rating,
           reviewText: reviewText
-        }));
+        };
+        console.log('Saving draft review:', draftData);
+        localStorage.setItem('draftReview', JSON.stringify(draftData));
         
         // Redirect to login page
         navigate('/login');
         return;
       }
-      
+
       const user = JSON.parse(userString);
       
       // Check for user ID using the same approach as in handleSaveClick
@@ -268,22 +279,37 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false }) => {
         datePosted: new Date().toISOString()
       };
       
+      console.log('Submitting review:', reviewData);
+      
       // Submit the review
       const response = await axios.post('http://localhost:5001/api/recipes/rating', reviewData);
+      console.log('Review submission response:', response.data);
+      
+      // Update the recipe's ratings array with the new review
+      if (recipe.ratings) {
+        recipe.ratings.push({
+          ...reviewData,
+          user_account: { name: user.name || user.username || 'Anonymous' },
+          ratingid: response.data.ratingid
+        });
+        
+        // Recalculate average rating
+        const totalRating = recipe.ratings.reduce((sum, r) => sum + r.score, 0);
+        recipe.averageRating = totalRating / recipe.ratings.length;
+      }
       
       setReviewMessage({
         type: 'success',
         text: 'Your review has been submitted!'
       });
       
-      // Clear form
+      // Clear form and draft
       setRating(0);
       setReviewText('');
       setShowReviewForm(false);
       
-      // Refresh recipe data to show the new review
-      // This would require an API call to get updated recipe data
-      // or we could update it locally
+      // Clear both localStorage items
+      localStorage.removeItem('draftReview');
       
       // Clear message after 5 seconds
       setTimeout(() => setReviewMessage(null), 5000);
@@ -335,17 +361,32 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false }) => {
     }
   }, []);
 
-  // Use an effect to handle changes to initialShowReviewForm
+  // Effect to handle initialization and draft review data
   useEffect(() => {
-    setShowReviewForm(initialShowReviewForm);
-    
-    // Restore review data if present
-    if (recipe?._reviewData) {
-      console.log('Restoring saved review data:', recipe._reviewData);
-      setReviewText(recipe._reviewData.reviewText || '');
-      setRating(recipe._reviewData.rating || 0);
+    // Check for draft review in localStorage
+    const draftReviewString = localStorage.getItem('draftReview');
+    if (draftReviewString) {
+      const savedDraft = JSON.parse(draftReviewString);
+      if (savedDraft.recipeId === recipe.recipeid) {
+        console.log('Restoring draft review:', savedDraft);
+        setRating(savedDraft.rating || 0);
+        setReviewText(savedDraft.reviewText || '');
+        setShowReviewForm(true);
+        // Don't remove the draft yet - wait until successful submission
+      }
+    } else if (draftReview) {
+      // If draft review was passed as prop (from navigation state)
+      console.log('Setting review from navigation state:', draftReview);
+      setRating(draftReview.rating || 0);
+      setReviewText(draftReview.reviewText || '');
+      setShowReviewForm(true);
+    } else {
+      // No draft review, use initial state
+      setShowReviewForm(initialShowReviewForm);
+      setRating(0);
+      setReviewText('');
     }
-  }, [initialShowReviewForm, recipe]);
+  }, [recipe.recipeid, draftReview, initialShowReviewForm]);
 
   if (!recipe) return null;
 
