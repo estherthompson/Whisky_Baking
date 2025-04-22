@@ -55,7 +55,6 @@ const UserAccount = () => {
     }
   }, [user, navigate]);
 
-  // Fetch user recipes when the component mounts or when activeTab changes to 'my-recipes'
   useEffect(() => {
     if (activeTab === 'my-recipes' && user) {
       console.log("Full user object from localStorage:", user);
@@ -94,33 +93,144 @@ const UserAccount = () => {
       return;
     }
     
+    console.log("=== BEGINNING USER RECIPES FETCH ===");
     console.log("Fetching recipes for user ID:", userId);
     setLoading(true);
     
     try {
-      // Use the regular endpoint to get the actual recipes with ratings
+      // Call the API to get the user's recipes
+      console.log(`Calling API: http://localhost:5001/api/user/${userId}/recipes`);
       const response = await axios.get(`http://localhost:5001/api/user/${userId}/recipes`);
+      
+      console.log("API Response status:", response.status);
       console.log("Raw recipes data:", response.data);
       
-      // Format the recipes to include user account information
-      const formattedRecipes = response.data.map(recipe => ({
-        ...recipe,
-        user_account: {
-          username: recipe.username || user.username || 'Unknown'
-        }
-      }));
+      // Log the exact structure of the API response
+      console.log("API Response stringified:", JSON.stringify(response.data));
       
-      console.log("Formatted recipes:", formattedRecipes);
-      setMyRecipes(formattedRecipes);
-      
-      if (response.data.length === 0) {
-        console.log("No recipes found for this user");
+      if (!Array.isArray(response.data)) {
+        console.error("Expected array response but got:", typeof response.data);
+        setMyRecipes([]);
+        return;
       }
+      
+      // Process each recipe to ensure it has the necessary fields
+      const processedRecipes = response.data.map(recipe => {
+        // Inspect every property of the recipe object
+        console.log(`RECIPE ${recipe.recipeid || 'unknown'} FULL DETAILS:`, recipe);
+        console.log(`Recipe keys:`, Object.keys(recipe));
+        
+        // We found the issue! 
+        // The backend controller uses 'imageUrl' (capital U) in the response
+        // But the database field is 'imageurl' (lowercase u)
+        // We need to explicitly check for both
+        
+        // Debug log each possible image URL field with its exact value
+        console.log('Image URL debugging for recipe', recipe.recipeid, {
+          'imageurl (lowercase)': recipe.imageurl,
+          'imageUrl (capital U)': recipe.imageUrl,
+          'imageURL (all caps)': recipe.imageURL
+        });
+        
+        // Check for any property that might contain the image URL
+        const allKeys = Object.keys(recipe);
+        const imageKeys = allKeys.filter(key => 
+          key.toLowerCase().includes('image') || 
+          key.toLowerCase().includes('photo') || 
+          key.toLowerCase().includes('picture')
+        );
+        
+        if (imageKeys.length > 0) {
+          console.log('Found potential image keys:', imageKeys);
+          imageKeys.forEach(key => {
+            console.log(`Value of ${key}:`, recipe[key]);
+          });
+        }
+        
+        // Select the image URL using the proper case from the controller response
+        // The controller is returning 'imageUrl' with capital U
+        const imageUrl = recipe.imageUrl || recipe.imageurl || null;
+        
+        console.log(`Selected image URL for recipe ${recipe.recipeid}:`, imageUrl);
+        
+        // Create a processed recipe that explicitly copies both versions of the field
+        const processedRecipe = {
+          ...recipe,
+          // Ensure both lowercase and capital U versions are available
+          imageurl: imageUrl,
+          imageUrl: imageUrl,
+          user_account: {
+            username: recipe.username || user.username || 'Unknown'
+          }
+        };
+        
+        console.log(`Processed recipe ${recipe.recipeid} image fields:`, {
+          original_imageurl: recipe.imageurl,
+          original_imageUrl: recipe.imageUrl,
+          normalized_imageurl: processedRecipe.imageurl,
+          normalized_imageUrl: processedRecipe.imageUrl
+        });
+        
+        return processedRecipe;
+      });
+      
+      console.log("=== FINAL PROCESSED RECIPES ===");
+      processedRecipes.forEach(recipe => {
+        console.log(`Recipe ${recipe.recipeid}: ${recipe.name}, Image URL: ${recipe.imageUrl || recipe.imageurl || 'NONE'}`);
+      });
+      
+      // Set the recipes first so we have something to display
+      setMyRecipes(processedRecipes);
+      
+      if (processedRecipes.length === 0) {
+        console.log("No recipes found for this user");
+        return;
+      }
+      
+      // Now fetch complete details for each recipe to ensure we have all fields including images
+      console.log("Fetching complete details for each recipe to get images...");
+      
+      const detailedRecipes = await Promise.all(
+        processedRecipes.map(async (recipe) => {
+          try {
+            // This is the same call that handleRecipeClick makes which loads the images correctly
+            const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
+            const detailedRecipe = response.data;
+            
+            console.log(`Detailed recipe ${recipe.recipeid} image URL:`, {
+              original: detailedRecipe.imageurl || detailedRecipe.imageUrl,
+              before: recipe.imageUrl || recipe.imageurl
+            });
+            
+            // Combine the data, ensuring we have the image URL
+            return {
+              ...recipe,
+              ...detailedRecipe,
+              // Ensure both versions of image URL
+              imageurl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
+              imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
+              // Keep consistent user info
+              user_account: {
+                username: recipe.username || recipe.user_account?.username || user.username || 'Unknown'
+              }
+            };
+          } catch (error) {
+            console.error(`Error fetching details for recipe ${recipe.recipeid}:`, error);
+            return recipe;
+          }
+        })
+      );
+      
+      console.log("Detailed recipes with images:", detailedRecipes);
+      setMyRecipes(detailedRecipes);
+      
     } catch (error) {
       console.error('Error fetching user recipes:', error);
-      console.log("Error response:", error.response?.data);
+      console.error('Error details:', error.response?.data || error.message);
+      setMyRecipes([]);
     } finally {
       setLoading(false);
+      console.log("=== END USER RECIPES FETCH ===");
     }
   };
 
@@ -136,11 +246,9 @@ const UserAccount = () => {
     setActivityLoading(true);
     
     try {
-      // Fetch real ratings data from the API
       const response = await axios.get(`http://localhost:5001/api/user/${userId}/ratings`);
       console.log('User ratings:', response.data);
       
-      // Transform the ratings data to match our activity format
       const realActivities = response.data.map(rating => ({
         id: rating.id || rating.rating_id,
         type: 'rating',
@@ -155,41 +263,9 @@ const UserAccount = () => {
         }
       }));
       
-      const mockViewedRecipes = [
-        {
-          id: 'view-1',
-          type: 'viewed',
-          recipe: {
-            id: 1,
-            name: 'Chocolate Cake'
-          },
-          date: new Date(Date.now() - 1000 * 60 * 60).toISOString(), // 1 hour ago
-          data: {}
-        },
-        {
-          id: 'view-2',
-          type: 'viewed',
-          recipe: {
-            id: 2,
-            name: 'Blueberry Muffins'
-          },
-          date: new Date(Date.now() - 1000 * 60 * 60 * 3).toISOString(), // 3 hours ago
-          data: {}
-        },
-        {
-          id: 'view-3',
-          type: 'viewed',
-          recipe: {
-            id: 3,
-            name: 'Apple Pie'
-          },
-          date: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(), // 1 day ago
-          data: {}
-        }
-      ];
-      
+
       // Combine the real ratings with the mock viewed recipes
-      setActivities([...realActivities, ...mockViewedRecipes]);
+      setActivities([...realActivities]);
       setActivityLoading(false);
       
     } catch (error) {
@@ -202,8 +278,13 @@ const UserAccount = () => {
   };
 
   const handleRecipeClick = async (recipe) => {
+    console.log('Recipe clicked:', recipe);
+    
     try {
+      console.log(`Fetching details for recipe ID: ${recipe.recipeid}`);
       const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
+      console.log('Recipe details API response:', response.data);
+      
       const recipeData = response.data;
       
       // Format the recipe to include user account information
@@ -218,12 +299,16 @@ const UserAccount = () => {
         description: recipeData.description,
         recipetime: recipeData.recipetime,
         rating: recipeData.rating,
-        ingredients: recipeData.ingredients || []
+        ingredients: recipeData.ingredients || [],
+        // Ensure image URL is properly set
+        imageurl: recipeData.imageurl || recipe.imageurl || null
       };
       
+      console.log('Formatted recipe for modal:', formattedRecipe);
       setSelectedRecipe(formattedRecipe);
     } catch (error) {
       console.error('Error fetching recipe details:', error);
+      console.error('Error response:', error.response?.data);
     }
   };
 
@@ -243,12 +328,7 @@ const UserAccount = () => {
         return <FontAwesomeIcon icon={faStar} />;
       case 'viewed':
         return <FontAwesomeIcon icon={faHistory} />;
-      case 'comment':
-        return <FontAwesomeIcon icon={faComment} />;
-      case 'creation':
-        return <FontAwesomeIcon icon={faPlus} />;
-      case 'save':
-        return <FontAwesomeIcon icon={faBookmark} />;
+  
       default:
         return <FontAwesomeIcon icon={faHistory} />;
     }
@@ -284,19 +364,55 @@ const UserAccount = () => {
     
     try {
       const response = await axios.get(`http://localhost:5001/api/user/${userId}/saved-recipes`);
-      console.log('Saved recipes:', response.data);
+      console.log('Saved recipes API response:', response.data);
       
-      // Format the recipes to include user account information
-      const formattedRecipes = response.data.recipes.map(recipe => ({
-        ...recipe,
-        user_account: {
-          username: recipe.username || 'Unknown'
+      if (!response.data.recipes || !Array.isArray(response.data.recipes)) {
+        console.error("Expected recipes array in response but got:", response.data);
+        setSavedRecipes([]);
+        return;
+      }
+      
+      // Format the recipes to include user account information and normalize image URLs
+      const formattedRecipes = response.data.recipes.map(recipe => {
+        // Log the exact structure of each recipe for debugging
+        console.log(`Saved recipe ${recipe.recipeid} raw data:`, JSON.stringify(recipe));
+        
+        // The backend controller uses 'imageUrl' (capital U) but we need to check both
+        const imageUrl = recipe.imageUrl || recipe.imageurl;
+        
+        console.log(`Saved recipe ${recipe.recipeid} image rendering:`, {
+          imageUrl_version: recipe.imageUrl,
+          imageurl_version: recipe.imageurl,
+          final_imageUrl: imageUrl
+        });
+        
+        if (imageUrl) {
+          console.log(`Saved recipe ${recipe.recipeid} rendering image from URL:`, imageUrl);
+          return {
+            ...recipe,
+            imageurl: imageUrl, // Use lowercase for consistency
+            user_account: {
+              username: recipe.username || 'Unknown'
+            }
+          };
+        } else {
+          console.log(`Saved recipe ${recipe.recipeid} has NO image URL`);
+          return {
+            ...recipe,
+            imageurl: null,
+            user_account: {
+              username: 'Unknown'
+            }
+          };
         }
-      }));
+      });
       
+      console.log("Formatted saved recipes:", formattedRecipes);
       setSavedRecipes(formattedRecipes || []);
     } catch (error) {
       console.error('Error fetching saved recipes:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      setSavedRecipes([]);
     } finally {
       setSavedRecipesLoading(false);
     }
@@ -533,7 +649,16 @@ const UserAccount = () => {
               <div className="loading">Loading your recipes...</div>
             ) : myRecipes.length > 0 ? (
               <div className="recipe-grid">
-                {myRecipes.map((recipe) => (
+                {myRecipes.map((recipe) => {
+                  console.log(`=== RENDERING RECIPE CARD ${recipe.recipeid} ===`);
+                  console.log(`Recipe ${recipe.recipeid} in render:`, {
+                    name: recipe.name,
+                    imageurl: recipe.imageurl,
+                    imageUrl: recipe.imageUrl,
+                    keys: Object.keys(recipe)
+                  });
+                  
+                  return (
                   <div 
                     key={recipe.recipeid} 
                     className="recipe-card"
@@ -548,21 +673,42 @@ const UserAccount = () => {
                     }}
                   >
                     <div className="recipe-image">
-                      {recipe.imageurl ? (
-                        <img 
-                          src={recipe.imageurl} 
-                          alt={recipe.name}
-                          onError={(e) => {
-                            console.log('Image failed to load:', recipe.imageurl);
-                            e.target.onerror = null;
-                            e.target.src = '/placeholder-recipe.jpg';
-                          }}
-                        />
-                      ) : (
-                        <div className="recipe-icon">
-                          <FontAwesomeIcon icon={faUtensils} size="3x" />
-                        </div>
-                      )}
+                      {(() => {
+                        // The backend controller uses 'imageUrl' (capital U)
+                        // But we need to check for both versions to be safe
+                        const imageUrl = recipe.imageUrl || recipe.imageurl;
+                        
+                        console.log(`Recipe ${recipe.recipeid} image rendering:`, {
+                          imageUrl_version: recipe.imageUrl,
+                          imageurl_version: recipe.imageurl,
+                          final_imageUrl: imageUrl
+                        });
+                        
+                        if (imageUrl) {
+                          console.log(`Recipe ${recipe.recipeid} rendering image from URL:`, imageUrl);
+                          return (
+                            <img 
+                              src={imageUrl}
+                              alt={recipe.name}
+                              style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                              onLoad={() => console.log(`Image for recipe ${recipe.recipeid} loaded successfully from ${imageUrl}!`)}
+                              onError={(e) => {
+                                console.error(`Image failed to load for recipe ${recipe.recipeid}:`, imageUrl);
+                                e.target.onerror = null;
+                                e.target.src = '/placeholder-recipe.jpg';
+                              }}
+                            />
+                          );
+                        } else {
+                          console.log(`Recipe ${recipe.recipeid} has NO image URL`);
+                          return (
+                            <div className="recipe-icon">
+                              <FontAwesomeIcon icon={faUtensils} size="3x" />
+                              <div className="no-image-text">No Images</div>
+                            </div>
+                          );
+                        }
+                      })()}
                     </div>
                     <div className="recipe-info">
                       <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>
@@ -577,7 +723,8 @@ const UserAccount = () => {
                       <p className="recipe-description">{recipe.description || 'No description available'}</p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="no-recipes">
@@ -596,7 +743,18 @@ const UserAccount = () => {
               <div className="loading">Loading your saved recipes...</div>
             ) : savedRecipes.length > 0 ? (
               <div className="recipe-grid">
-                {savedRecipes.map((recipe) => (
+                {savedRecipes.map((recipe) => {
+                  console.log(`Rendering saved recipe ${recipe.recipeid}:`, {
+                    name: recipe.name,
+                    imageurl: recipe.imageurl,
+                    imageUrl: recipe.imageUrl,
+                    image_url: recipe.image_url,
+                    description: recipe.description?.substring(0, 30) + '...',
+                    dateSaved: recipe.dateSaved,
+                    fullRecipe: recipe
+                  });
+                  
+                  return (
                   <div 
                     key={recipe.recipeid} 
                     className="recipe-card"
@@ -611,21 +769,41 @@ const UserAccount = () => {
                     }}
                   >
                     <div className="recipe-image">
-                      {recipe.image_url ? (
-                        <img 
-                          src={recipe.image_url} 
-                          alt={recipe.name}
-                          onError={(e) => {
-                            console.log('Image failed to load:', recipe.image_url);
-                            e.target.onerror = null;
-                            e.target.src = '/placeholder-recipe.jpg';
-                          }}
-                        />
-                      ) : (
-                        <div className="recipe-icon">
-                          <FontAwesomeIcon icon={faUtensils} size="3x" />
-                        </div>
-                      )}
+                      {(() => {
+                        // The backend controller uses 'imageUrl' (capital U) but we need to check both
+                        const imageUrl = recipe.imageUrl || recipe.imageurl;
+                        
+                        console.log(`Saved recipe ${recipe.recipeid} image rendering:`, {
+                          imageUrl_version: recipe.imageUrl,
+                          imageurl_version: recipe.imageurl,
+                          final_imageUrl: imageUrl
+                        });
+                        
+                        if (imageUrl) {
+                          console.log(`Saved recipe ${recipe.recipeid} rendering image from URL:`, imageUrl);
+                          return (
+                            <img 
+                              src={imageUrl}
+                              alt={recipe.name}
+                              style={{width: '100%', height: '100%', objectFit: 'cover'}}
+                              onLoad={() => console.log(`Image for saved recipe ${recipe.recipeid} loaded successfully!`)}
+                              onError={(e) => {
+                                console.error(`Image failed to load for saved recipe ${recipe.recipeid}:`, imageUrl);
+                                e.target.onerror = null;
+                                e.target.src = '/placeholder-recipe.jpg';
+                              }}
+                            />
+                          );
+                        } else {
+                          console.log(`Saved recipe ${recipe.recipeid} has NO image URL`);
+                          return (
+                            <div className="recipe-icon">
+                              <FontAwesomeIcon icon={faUtensils} size="3x" />
+                              <div className="no-image-text">No Images</div>
+                            </div>
+                          );
+                        }
+                      })()}
                     </div>
                     <div className="recipe-info">
                       <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>
@@ -640,7 +818,8 @@ const UserAccount = () => {
                       <p className="recipe-description">{recipe.description?.substring(0, 100) || 'No description available'}</p>
                     </div>
                   </div>
-                ))}
+                  );
+                })}
               </div>
             ) : (
               <div className="no-recipes">
