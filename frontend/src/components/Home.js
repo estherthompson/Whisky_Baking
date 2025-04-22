@@ -18,16 +18,49 @@ const Home = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
+  const [dietaryRestrictions, setDietaryRestrictions] = useState([]);
+  const [selectedRestrictions, setSelectedRestrictions] = useState({});
   const [ingredients, setIngredients] = useState([]);
   const [excludedIngredients, setExcludedIngredients] = useState({});
   const filterPanelRef = useRef(null);
+
+  // Fetch dietary restrictions from the database
+  const fetchDietaryRestrictions = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('dietary_restriction')
+        .select('*')
+        .order('name');
+
+      if (error) throw error;
+
+      // Initialize selectedRestrictions state
+      const initialRestrictions = data.reduce((acc, restriction) => {
+        acc[restriction.name] = false;
+        return acc;
+      }, {});
+
+      setDietaryRestrictions(data);
+      setSelectedRestrictions(initialRestrictions);
+    } catch (error) {
+      console.error('Error fetching dietary restrictions:', error);
+    }
+  };
 
   // Fetch all ingredients from the database
   const fetchIngredients = async () => {
     try {
       const { data, error } = await supabase
         .from('ingredient')
-        .select('ingredientid, name')
+        .select(`
+          ingredientid,
+          name,
+          dietary_restriction_ingredient (
+            dietary_restriction (
+              name
+            )
+          )
+        `)
         .order('name');
 
       if (error) throw error;
@@ -46,6 +79,7 @@ const Home = () => {
   };
 
   useEffect(() => {
+    fetchDietaryRestrictions();
     fetchIngredients();
   }, []);
 
@@ -59,6 +93,34 @@ const Home = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const handleRestrictionToggle = (restrictionName) => {
+    setSelectedRestrictions(prev => ({
+      ...prev,
+      [restrictionName]: !prev[restrictionName]
+    }));
+
+    // Get ingredients associated with this restriction
+    const restrictedIngredients = ingredients.filter(ingredient => 
+      ingredient.dietary_restriction_ingredient?.some(dri => 
+        dri.dietary_restriction.name === restrictionName
+      )
+    ).map(ingredient => ingredient.name);
+
+    // Update excluded ingredients based on the restriction
+    setExcludedIngredients(prev => {
+      const newState = { ...prev };
+      restrictedIngredients.forEach(ingredient => {
+        // If the restriction is being checked, exclude these ingredients
+        // If the restriction is being unchecked, include these ingredients
+        newState[ingredient] = !prev[restrictionName];
+      });
+      return newState;
+    });
+
+    // Trigger recipe fetch after updating ingredients
+    fetchRecipes();
+  };
 
   const handleIngredientToggle = (ingredient) => {
     setExcludedIngredients(prev => ({
@@ -74,13 +136,15 @@ const Home = () => {
         .from('recipe')
         .select(`
           *,
-          user_account:userid (
-            username
-          ),
           recipe_ingredient (
             ingredient (
               name,
-              ingredientid
+              ingredientid,
+              dietary_restriction_ingredient (
+                dietary_restriction (
+                  name
+                )
+              )
             ),
             quantity
           ),
@@ -98,8 +162,6 @@ const Home = () => {
         console.error('Supabase query error:', error);
         throw error;
       }
-
-      console.log("data:", data)
 
       // Filter out recipes that contain excluded ingredients
       const uncheckedIngredients = Object.entries(excludedIngredients)
@@ -133,7 +195,6 @@ const Home = () => {
 
         return {
           ...recipe,
-          username: recipe.user_account?.username || 'Unknown',
           ingredients: recipe.recipe_ingredient?.map(ri => ({
             name: ri.ingredient.name,
             quantity: ri.quantity
@@ -259,22 +320,48 @@ const Home = () => {
 
           {showFilters && (
             <div className="filters-panel" ref={filterPanelRef}>
-              <h2>Exclude Ingredients</h2>
-              <div className="ingredients-grid">
-                {ingredients.map((ingredient) => (
+              <h2>Dietary Restrictions</h2>
+              <div className="restrictions-grid">
+                {dietaryRestrictions.map((restriction) => (
                   <label 
-                    key={ingredient.ingredientid} 
-                    className="ingredient-checkbox"
-                    data-ingredient={ingredient.name.toLowerCase()}
+                    key={restriction.restrictionid} 
+                    className="restriction-checkbox"
                   >
                     <input
                       type="checkbox"
-                      checked={excludedIngredients[ingredient.name]}
-                      onChange={() => handleIngredientToggle(ingredient.name)}
+                      checked={selectedRestrictions[restriction.name]}
+                      onChange={() => handleRestrictionToggle(restriction.name)}
                     />
-                    {ingredient.name}
+                    {restriction.name}
                   </label>
                 ))}
+              </div>
+
+              <h2>Exclude Ingredients</h2>
+              <div className="ingredients-grid">
+                {ingredients
+                  .filter(ingredient => {
+                    // Don't show ingredients that are part of selected dietary restrictions
+                    const isPartOfSelectedRestriction = ingredient.dietary_restriction_ingredient?.some(dri => 
+                      selectedRestrictions[dri.dietary_restriction.name]
+                    );
+                    return !isPartOfSelectedRestriction;
+                  })
+                  .map((ingredient) => (
+                    <label 
+                      key={ingredient.ingredientid} 
+                      className="ingredient-checkbox"
+                      data-ingredient={ingredient.name.toLowerCase()}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={excludedIngredients[ingredient.name]}
+                        onChange={() => handleIngredientToggle(ingredient.name)}
+                      />
+                      {ingredient.name}
+                    </label>
+                  ))
+                }
               </div>
             </div>
           )}

@@ -86,6 +86,70 @@
   text-align: center;
 }
 
+.restrictions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 12px;
+  padding: 10px;
+  margin-bottom: 20px;
+}
+
+.restriction-checkbox {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-weight: 500;
+  color: #4a5568;
+}
+
+.restriction-checkbox:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.restriction-checkbox input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid #CBD5E0;
+  cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  position: relative;
+  background: white;
+  transition: all 0.2s ease;
+}
+
+.restriction-checkbox input[type="checkbox"]:checked {
+  background-color: #FF69B4;
+  border-color: #FF69B4;
+}
+
+.restriction-checkbox input[type="checkbox"]:checked::after {
+  content: '✓';
+  position: absolute;
+  color: white;
+  font-size: 14px;
+  left: 4px;
+  top: 0;
+}
+
+/* Pastel colors for dietary restrictions */
+.restriction-checkbox:nth-child(1) { background-color: #FFDADA; }  /* Soft Pink */
+.restriction-checkbox:nth-child(2) { background-color: #DAFFDA; }  /* Soft Mint */
+.restriction-checkbox:nth-child(3) { background-color: #DADAFF; }  /* Soft Lavender */
+.restriction-checkbox:nth-child(4) { background-color: #FFDAF0; }  /* Soft Rose */
+.restriction-checkbox:nth-child(5) { background-color: #FFFFDA; }  /* Soft Yellow */
+.restriction-checkbox:nth-child(6) { background-color: #DAF0FF; }  /* Soft Sky */
+.restriction-checkbox:nth-child(7) { background-color: #FFE4DA; }  /* Soft Peach */
+.restriction-checkbox:nth-child(8) { background-color: #E4DAFF; }  /* Soft Purple */
+.restriction-checkbox:nth-child(9) { background-color: #DAFFEC; }  /* Soft Aqua */
+.restriction-checkbox:nth-child(10) { background-color: #FFE8D6; } /* Soft Orange */
+
 .ingredients-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
@@ -138,23 +202,44 @@
   top: 0;
 }
 
-/* Different pastel backgrounds for ingredient types */
-.ingredient-checkbox[data-ingredient="eggs"] { background-color: #FFE5E5; }
-.ingredient-checkbox[data-ingredient="milk"] { background-color: #E5F3FF; }
-.ingredient-checkbox[data-ingredient="butter"] { background-color: #FFF2E5; }
-.ingredient-checkbox[data-ingredient="flour"] { background-color: #F5E5FF; }
-.ingredient-checkbox[data-ingredient="sugar"] { background-color: #E5FFE5; }
-.ingredient-checkbox[data-ingredient="baking powder"] { background-color: #FFE5F3; }
-.ingredient-checkbox[data-ingredient="salt"] { background-color: #E5FFFF; }
-.ingredient-checkbox[data-ingredient="vanilla extract"] { background-color: #FFF5E5; }
-.ingredient-checkbox[data-ingredient="chocolate"] { background-color: #F2E5FF; }
-.ingredient-checkbox[data-ingredient="nuts"] { background-color: #FFE5E8; }
-.ingredient-checkbox[data-ingredient="fruit"] { background-color: #E5FFF2; }
-.ingredient-checkbox[data-ingredient="vegetables"] { background-color: #E8FFE5; }
-.ingredient-checkbox[data-ingredient="cream"] { background-color: #FFF0E5; }
-.ingredient-checkbox[data-ingredient="yeast"] { background-color: #E5FFE8; }
-.ingredient-checkbox[data-ingredient="cinnamon"] { background-color: #FFE8E5; }
-.ingredient-checkbox[data-ingredient="honey"] { background-color: #FFF8E5; }
+/* Random pastel colors for all ingredient boxes */
+.ingredient-checkbox:nth-child(1) { background-color: #FFE5E5; }  /* Light Pink */
+.ingredient-checkbox:nth-child(2) { background-color: #E5FFE5; }  /* Light Green */
+.ingredient-checkbox:nth-child(3) { background-color: #E5E5FF; }  /* Light Blue */
+.ingredient-checkbox:nth-child(4) { background-color: #FFE5FF; }  /* Light Purple */
+.ingredient-checkbox:nth-child(5) { background-color: #FFFFE5; }  /* Light Yellow */
+.ingredient-checkbox:nth-child(6) { background-color: #E5FFFF; }  /* Light Cyan */
+.ingredient-checkbox:nth-child(7) { background-color: #FFE5F0; }  /* Light Salmon */
+.ingredient-checkbox:nth-child(8) { background-color: #F0E5FF; }  /* Light Lavender */
+.ingredient-checkbox:nth-child(9) { background-color: #E5FFF0; }  /* Light Mint */
+.ingredient-checkbox:nth-child(10) { background-color: #FFF0E5; } /* Light Peach */
+.ingredient-checkbox:nth-child(11) { background-color: #F5E6FF; } /* Light Violet */
+.ingredient-checkbox:nth-child(12) { background-color: #FFE6F5; } /* Light Rose */
+.ingredient-checkbox:nth-child(13) { background-color: #E6FFF5; } /* Light Aqua */
+.ingredient-checkbox:nth-child(14) { background-color: #F5FFE6; } /* Light Lime */
+.ingredient-checkbox:nth-child(15) { background-color: #FFE6E6; } /* Light Coral */
+.ingredient-checkbox:nth-child(16) { background-color: #E6F5FF; } /* Light Sky */
+.ingredient-checkbox:nth-child(17) { background-color: #FFE6FF; } /* Light Magenta */
+.ingredient-checkbox:nth-child(18) { background-color: #FFF5E6; } /* Light Orange */
+.ingredient-checkbox:nth-child(19) { background-color: #E6FFE6; } /* Light Spring */
+.ingredient-checkbox:nth-child(20) { background-color: #F5F5FF; } /* Light Periwinkle */
+.ingredient-checkbox:nth-child(21) { background-color: #FFE6F0; } /* Light Blush */
+.ingredient-checkbox:nth-child(22) { background-color: #F0FFE6; } /* Light Sage */
+.ingredient-checkbox:nth-child(23) { background-color: #E6F0FF; } /* Light Azure */
+.ingredient-checkbox:nth-child(24) { background-color: #FFE6B3; } /* Light Apricot */
+.ingredient-checkbox:nth-child(25) { background-color: #E6FFB3; } /* Light Chartreuse */
+.ingredient-checkbox:nth-child(26) { background-color: #F0E6D3; } /* Light Oat */
+.ingredient-checkbox:nth-child(27) { background-color: #E6D5CC; } /* Light Mocha */
+.ingredient-checkbox:nth-child(28) { background-color: #FFE8D6; } /* Light Beige */
+.ingredient-checkbox:nth-child(29) { background-color: #E6E6D6; } /* Light Sage */
+.ingredient-checkbox:nth-child(30) { background-color: #D6E6E6; } /* Light Powder Blue */
+
+/* For any additional ingredients, cycle through 5 more pastel colors */
+.ingredient-checkbox:nth-child(30n + 31) { background-color: #FFE5D6; } /* Light Peach */
+.ingredient-checkbox:nth-child(30n + 32) { background-color: #E5FFD6; } /* Light Mint */
+.ingredient-checkbox:nth-child(30n + 33) { background-color: #D6FFE5; } /* Light Sea */
+.ingredient-checkbox:nth-child(30n + 34) { background-color: #D6E5FF; } /* Light Sky */
+.ingredient-checkbox:nth-child(30n + 35) { background-color: #FFD6E5; } /* Light Rose */
 
 /* Content Section Styles */
 .content-section {
