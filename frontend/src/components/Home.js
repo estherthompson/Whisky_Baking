@@ -63,6 +63,9 @@ const Home = () => {
         .from('recipe')
         .select(`
           *,
+          user_account:userid (
+            username
+          ),
           recipe_ingredient (
             ingredient (
               name,
@@ -84,6 +87,8 @@ const Home = () => {
         console.error('Supabase query error:', error);
         throw error;
       }
+
+      console.log("data:", data)
 
       // Filter out recipes that contain excluded ingredients
       const uncheckedIngredients = Object.entries(excludedIngredients)
@@ -117,6 +122,7 @@ const Home = () => {
 
         return {
           ...recipe,
+          username: recipe.user_account?.username || 'Unknown',
           ingredients: recipe.recipe_ingredient?.map(ri => ({
             name: ri.ingredient.name,
             quantity: ri.quantity
@@ -143,6 +149,7 @@ const Home = () => {
     // First set the basic recipe data to show the modal immediately
     setSelectedRecipe({
       ...recipe,
+      username: recipe.user_account?.username || 'Unknown',
       ingredients: [] // Will be populated after fetch
     });
     
@@ -152,6 +159,9 @@ const Home = () => {
         .from('recipe')
         .select(`
           *,
+          user_account:userid (
+            username
+          ),
           recipe_ingredient!inner (
             ingredient!inner (
               name,
@@ -192,6 +202,7 @@ const Home = () => {
       // Update the recipe with full details
       const formattedRecipe = {
         ...data,
+        username: recipe.user_account?.username || 'Unknown',
         ingredients: data.recipe_ingredient.map(ri => ({
           name: ri.ingredient.name,
           quantity: ri.quantity

@@ -398,6 +398,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false }) => {
           <div className="modal-header">
             <h2 className="recipe-title">{recipe.name}</h2>
             <div className="recipe-description-container">
+              <p className="recipe-description">By: {recipe.username}</p>
               <p className="recipe-description">{recipe.description}</p>
             </div>
             <div className="recipe-meta">
