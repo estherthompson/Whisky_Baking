@@ -206,7 +206,8 @@ const Home = () => {
       });
 
       console.log("Formatted recipes:", formattedRecipes); // Debug log
-      setRecipes(formattedRecipes);
+      const sortedRecipes = formattedRecipes.sort((a, b) => b.averageRating - a.averageRating);
+      setRecipes(sortedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
     } finally {
@@ -486,7 +487,6 @@ const Home = () => {
         </div>
       </div>
 
-      {(loading || recipes.length > 0) && (
         <div className="content-section">
           <h2 className="section-title">Popular Recipes</h2>
           {loading ? (
@@ -544,7 +544,6 @@ const Home = () => {
             <div className="no-results">No recipes found. Try adjusting your search or filters.</div>
           )}
         </div>
-      )}
 
       {selectedRecipe && (
         <RecipeModal
