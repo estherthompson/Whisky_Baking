@@ -439,7 +439,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
           <div className="modal-header">
             <h2 className="recipe-title">{recipe.name}</h2>
             <div className="recipe-description-container">
-              <p className="recipe-description">By: {recipe.username}</p>
+              <p className="recipe-description">By: {recipe.user_account?.name || recipe.user_account?.username || 'Unknown'}</p>
               <p className="recipe-description">{recipe.description}</p>
             </div>
             <div className="recipe-meta">
@@ -545,7 +545,9 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
                 {recipe.ratings.map((review) => (
                   <div key={review.ratingid} className="review-item">
                     <div className="review-header">
-                      <span className="review-user">{review.user_account?.name || 'Anonymous'}</span>
+                      <span className="reviewer-name">
+                        {review.user_account?.name || 'Anonymous'}
+                      </span>
                       <span className="review-date">
                         {new Date(review.dateposted).toLocaleDateString()}
                       </span>
@@ -553,12 +555,12 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
                     <div className="review-rating">
                       {renderStars(review.score)}
                     </div>
-                    <p className="review-comment">{review.reviewtext}</p>
+                    <p className="review-text">{review.reviewtext}</p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p>No reviews yet. Be the first to review this recipe!</p>
+              <p className="no-reviews">No reviews yet. Be the first to review!</p>
             )}
           </div>
         </div>

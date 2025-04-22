@@ -6,7 +6,8 @@ import {
   faFilter,
   faStar,
   faClock,
-  faUtensils
+  faUtensils,
+  faAppleWhole 
 } from '@fortawesome/free-solid-svg-icons';
 import homeBanner from '../assets/images/home-banner.jpg';
 import { supabase } from '../supabaseClient';
@@ -19,6 +20,7 @@ const Home = () => {
   const [showFilters, setShowFilters] = useState(false);
   const [showAvailableIngredients, setShowAvailableIngredients] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [ingredientSearchQuery, setIngredientSearchQuery] = useState('');
   const [selectedRecipe, setSelectedRecipe] = useState(null);
   const [ingredients, setIngredients] = useState([]);
   const [excludedIngredients, setExcludedIngredients] = useState({});
@@ -75,17 +77,6 @@ const Home = () => {
     fetchIngredients();
   }, []);
 
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (filterPanelRef.current && !filterPanelRef.current.contains(event.target)) {
-        setShowFilters(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const handleIngredientToggle = (ingredient) => {
     setExcludedIngredients(prev => ({
       ...prev,
@@ -124,7 +115,8 @@ const Home = () => {
         .select(`
           *,
           user_account:userid (
-            username
+            username,
+            name
           ),
           recipe_ingredient (
             ingredient (
@@ -137,7 +129,7 @@ const Home = () => {
             score
           )
         `)
-        .eq('is_approved', true); // Only fetch approved recipes
+        .eq('is_approved', true);
 
       if (searchQuery) {
         query = query.ilike('name', `%${searchQuery}%`);
@@ -149,20 +141,21 @@ const Home = () => {
         throw error;
       }
 
+      console.log("Raw recipe data:", data); // Debug log
+
       // Filter out recipes that contain excluded ingredients
       const uncheckedIngredients = Object.entries(excludedIngredients)
-        .filter(([_, isChecked]) => !isChecked)  // Get unchecked ingredients
+        .filter(([_, isChecked]) => !isChecked)
         .map(([ingredient]) => ingredient.toLowerCase());
 
       // If no ingredients are unchecked, show all recipes
       let filteredRecipes = uncheckedIngredients.length === 0
-        ? data // Show all recipes if no ingredients are unchecked
+        ? data
         : data.filter(recipe => {
             const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
               ri.ingredient.name.toLowerCase()
             ) || [];
             
-            // Filter out recipes that contain any unchecked ingredients
             return !uncheckedIngredients.some(unchecked => 
               recipeIngredients.some(ingredient => 
                 ingredient.includes(unchecked)
@@ -175,16 +168,18 @@ const Home = () => {
         .filter(([_, isSelected]) => isSelected)
         .map(([name]) => name.toLowerCase());
 
-      if (selectedIngredients.length > 0) {
-        filteredRecipes = filteredRecipes.filter(recipe => {
-          const recipeIngredients = recipe.recipe_ingredient?.map(ri => 
-            ri.ingredient.name.toLowerCase()
-          ) || [];
-          return selectedIngredients.every(selectedIng => 
-            recipeIngredients.some(recipeIng => recipeIng.includes(selectedIng))
-          );
-        });
-      }
+        if (selectedIngredients.length > 0) {
+          filteredRecipes = filteredRecipes.filter(recipe => {
+            const recipeIngredients = recipe.recipe_ingredient?.map(ri =>
+              ri.ingredient.name.toLowerCase()
+            ) || [];
+        
+            // true only if every recipe ingredient is in selectedIngredients
+            return recipeIngredients.every(ingredient =>
+              selectedIngredients.includes(ingredient)
+            );
+          });
+        }
 
       // Format the recipes with their ingredients and average rating
       const formattedRecipes = filteredRecipes.map(recipe => {
@@ -195,9 +190,13 @@ const Home = () => {
           averageRating = totalRating / recipe.rating.length;
         }
 
+        // Get the username from user_account
+        const username = recipe.user_account?.name || recipe.user_account?.username || 'Unknown';
+        console.log("Recipe:", recipe.name, "Username:", username); // Debug log
+
         return {
           ...recipe,
-          username: recipe.user_account?.username || 'Unknown',
+          username: username,
           ingredients: recipe.recipe_ingredient?.map(ri => ({
             name: ri.ingredient.name,
             quantity: ri.quantity
@@ -206,6 +205,7 @@ const Home = () => {
         };
       });
 
+      console.log("Formatted recipes:", formattedRecipes); // Debug log
       setRecipes(formattedRecipes);
     } catch (error) {
       console.error('Error fetching recipes:', error);
@@ -226,7 +226,7 @@ const Home = () => {
     // First set the basic recipe data to show the modal immediately
     setSelectedRecipe({
       ...recipe,
-      username: recipe.user_account?.username || 'Unknown',
+      username: recipe.user_account?.name || recipe.user_account?.username || 'Unknown',
       ingredients: [] // Will be populated after fetch
     });
     
@@ -237,7 +237,8 @@ const Home = () => {
         .select(`
           *,
           user_account:userid (
-            username
+            username,
+            name
           ),
           recipe_ingredient!inner (
             ingredient!inner (
@@ -257,7 +258,7 @@ const Home = () => {
           )
         `)
         .eq('recipeid', recipe.recipeid)
-        .eq('is_approved', true) // Only get approved recipes
+        .eq('is_approved', true)
         .single();
 
       if (error) {
@@ -280,7 +281,7 @@ const Home = () => {
       // Update the recipe with full details
       const formattedRecipe = {
         ...data,
-        username: recipe.user_account?.username || 'Unknown',
+        username: data.user_account?.name || data.user_account?.username || 'Unknown',
         ingredients: data.recipe_ingredient.map(ri => ({
           name: ri.ingredient.name,
           quantity: ri.quantity
@@ -336,16 +337,25 @@ const Home = () => {
   }, []);
 
   const toggleIngredient = (ingredientName) => {
-    setAvailableIngredients(prev => {
-      const newState = {
-        ...prev,
-        [ingredientName]: !prev[ingredientName]
-      };
-      // Fetch recipes after updating the state
-      fetchRecipes();
-      return newState;
-    });
+    setAvailableIngredients(prev => ({
+      ...prev,
+      [ingredientName]: !prev[ingredientName]
+    }));
   };
+
+  const clearIngredients = () => {
+    const clearedState = Object.keys(availableIngredients).reduce((acc, key) => {
+      acc[key] = false;
+      return acc;
+    }, {});
+    setAvailableIngredients(clearedState);
+    setIngredientSearchQuery(''); // Clear the search input
+    fetchRecipes();
+  };
+
+  const filteredIngredients = allIngredients.filter(ingredient =>
+    ingredient.name.toLowerCase().includes(ingredientSearchQuery.toLowerCase())
+  );
 
   return (
     <div className="home-container">
@@ -355,38 +365,48 @@ const Home = () => {
       >
         <h1 className="hero-title">Baking is Whisk-Y Business</h1>
         <div className="search-container">
-          <div className="search-bar">
-            <FontAwesomeIcon icon={faSearch} className="search-icon" />
-            <input
-              type="text"
-              placeholder="Search recipes..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && fetchRecipes()}
-            />
-            <button 
-              className="available-ingredients-button"
-              onClick={() => setShowAvailableIngredients(!showAvailableIngredients)}
-              aria-label="Available ingredients"
-            >
-              <i className="fas fa-apple-alt"></i>
-            </button>
-            <button 
-              className="filter-button"
-              onClick={() => setShowFilters(!showFilters)}
-              aria-label="Filter recipes"
-            >
-              <FontAwesomeIcon icon={faFilter} />
-            </button>
-          </div>
+            <div className="search-bar">
+              <FontAwesomeIcon icon={faSearch} className="search-icon" />
+              <input
+                type="text"
+                placeholder="Search recipes..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && fetchRecipes()}
+              />
+              <button 
+                className="available-ingredients-button"
+                onClick={() => setShowAvailableIngredients(!showAvailableIngredients)}
+                aria-label="Available ingredients"
+              >
+                <FontAwesomeIcon icon={faAppleWhole} />
+              </button>
+              <button 
+                className="filter-button"
+                onClick={() => setShowFilters(showFilters => !showFilters)}
+                aria-label="Filter recipes"
+              >
+                <FontAwesomeIcon icon={faFilter} />
+              </button>
+            </div>
           
           {showAvailableIngredients && (
             <div className="available-ingredients-panel" ref={availableIngredientsRef}>
               <p className="panel-description">
                 Select ingredients you have at home
               </p>
+              <div className="ingredient-search-container">
+                <FontAwesomeIcon icon={faSearch} className="ingredient-search-icon" />
+                <input
+                  type="text"
+                  className="ingredient-search-input"
+                  placeholder="Search ingredients..."
+                  value={ingredientSearchQuery}
+                  onChange={(e) => setIngredientSearchQuery(e.target.value)}
+                />
+              </div>
               <div className="ingredients-grid">
-                {allIngredients.map((ingredient) => (
+                {filteredIngredients.map((ingredient) => (
                   <label 
                     key={ingredient.ingredientid} 
                     className="ingredient-checkbox available"
@@ -400,6 +420,23 @@ const Home = () => {
                     {ingredient.name}
                   </label>
                 ))}
+              </div>
+              <div className="button-container">
+                <button 
+                  className="clear-button"
+                  onClick={clearIngredients}
+                >
+                  Clear
+                </button>
+                <button 
+                  className="done-button"
+                  onClick={() => {
+                    setShowAvailableIngredients(false)
+                    fetchRecipes();
+                    }}
+                >
+                  Done
+                </button>
               </div>
             </div>
           )}
@@ -490,6 +527,7 @@ const Home = () => {
                   <div className="recipe-info">
                     <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>
                     <div className="recipe-meta">
+                      <span className="recipe-author">By {recipe.username || 'Unknown'}</span>
                       <span className="prep-time">
                         <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
                       </span>
@@ -511,10 +549,7 @@ const Home = () => {
       {selectedRecipe && (
         <RecipeModal
           recipe={selectedRecipe}
-          onClose={() => {
-            console.log('Closing modal');
-            setSelectedRecipe(null);
-          }}
+          onClose={() => setSelectedRecipe(null)}
           initialShowReviewForm={!!location.state?.draftReview}
           draftReview={location.state?.draftReview}
         />
