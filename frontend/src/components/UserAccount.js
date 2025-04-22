@@ -197,18 +197,29 @@ const UserAccount = () => {
             const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
             const detailedRecipe = response.data;
             
-            console.log(`Detailed recipe ${recipe.recipeid} image URL:`, {
-              original: detailedRecipe.imageurl || detailedRecipe.imageUrl,
-              before: recipe.imageUrl || recipe.imageurl
+            console.log(`Detailed recipe ${recipe.recipeid} data:`, {
+              imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl,
+              ratings: detailedRecipe.ratings?.length || 0,
+              averageRating: detailedRecipe.averageRating
             });
             
-            // Combine the data, ensuring we have the image URL
+            // Calculate the average rating if needed
+            let averageRating = detailedRecipe.averageRating;
+            if (!averageRating && detailedRecipe.ratings && detailedRecipe.ratings.length > 0) {
+              const totalRating = detailedRecipe.ratings.reduce((sum, rating) => sum + rating.score, 0);
+              averageRating = (totalRating / detailedRecipe.ratings.length).toFixed(1);
+            }
+            
+            // Combine the data, ensuring we have the image URL and ratings
             return {
               ...recipe,
               ...detailedRecipe,
               // Ensure both versions of image URL
               imageurl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
               imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
+              // Ensure we have rating data
+              averageRating: averageRating || recipe.averageRating || 'N/A',
+              ratings: detailedRecipe.ratings || [],
               // Keep consistent user info
               user_account: {
                 username: recipe.username || recipe.user_account?.username || user.username || 'Unknown'
@@ -359,6 +370,7 @@ const UserAccount = () => {
       return;
     }
     
+    console.log("=== BEGINNING SAVED RECIPES FETCH ===");
     console.log("Fetching saved recipes for user ID:", userId);
     setSavedRecipesLoading(true);
     
@@ -372,49 +384,79 @@ const UserAccount = () => {
         return;
       }
       
-      // Format the recipes to include user account information and normalize image URLs
-      const formattedRecipes = response.data.recipes.map(recipe => {
-        // Log the exact structure of each recipe for debugging
-        console.log(`Saved recipe ${recipe.recipeid} raw data:`, JSON.stringify(recipe));
-        
-        // The backend controller uses 'imageUrl' (capital U) but we need to check both
+      // First set basic recipes data
+      const initialSavedRecipes = response.data.recipes.map(recipe => {
         const imageUrl = recipe.imageUrl || recipe.imageurl;
-        
-        console.log(`Saved recipe ${recipe.recipeid} image rendering:`, {
-          imageUrl_version: recipe.imageUrl,
-          imageurl_version: recipe.imageurl,
-          final_imageUrl: imageUrl
-        });
-        
-        if (imageUrl) {
-          console.log(`Saved recipe ${recipe.recipeid} rendering image from URL:`, imageUrl);
-          return {
-            ...recipe,
-            imageurl: imageUrl, // Use lowercase for consistency
-            user_account: {
-              username: recipe.username || 'Unknown'
-            }
-          };
-        } else {
-          console.log(`Saved recipe ${recipe.recipeid} has NO image URL`);
-          return {
-            ...recipe,
-            imageurl: null,
-            user_account: {
-              username: 'Unknown'
-            }
-          };
-        }
+        return {
+          ...recipe,
+          imageurl: imageUrl,
+          imageUrl: imageUrl
+        };
       });
       
-      console.log("Formatted saved recipes:", formattedRecipes);
-      setSavedRecipes(formattedRecipes || []);
+      // Set initial data
+      setSavedRecipes(initialSavedRecipes);
+      
+      if (initialSavedRecipes.length === 0) {
+        console.log("No saved recipes found");
+        return;
+      }
+      
+      // Then fetch full details for each recipe to get ratings and images
+      console.log("Fetching complete details for saved recipes...");
+      
+      const detailedRecipes = await Promise.all(
+        initialSavedRecipes.map(async (recipe) => {
+          try {
+            const response = await axios.get(`http://localhost:5001/api/recipes/${recipe.recipeid}`);
+            const detailedRecipe = response.data;
+            
+            console.log(`Detailed saved recipe ${recipe.recipeid} data:`, {
+              imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl,
+              ratings: detailedRecipe.ratings?.length || 0,
+              averageRating: detailedRecipe.averageRating
+            });
+            
+            // Calculate the average rating if needed
+            let averageRating = detailedRecipe.averageRating;
+            if (!averageRating && detailedRecipe.ratings && detailedRecipe.ratings.length > 0) {
+              const totalRating = detailedRecipe.ratings.reduce((sum, rating) => sum + rating.score, 0);
+              averageRating = (totalRating / detailedRecipe.ratings.length).toFixed(1);
+            }
+            
+            // Merge the detailed data with the saved recipe data
+            return {
+              ...recipe,
+              ...detailedRecipe,
+              // Keep the original date saved
+              dateSaved: recipe.dateSaved,
+              // Ensure both versions of image URL
+              imageurl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
+              imageUrl: detailedRecipe.imageurl || detailedRecipe.imageUrl || recipe.imageUrl || recipe.imageurl,
+              // Ensure we have rating data
+              averageRating: averageRating || 'N/A',
+              ratings: detailedRecipe.ratings || []
+            };
+          } catch (error) {
+            console.error(`Error fetching details for saved recipe ${recipe.recipeid}:`, error);
+            return recipe;
+          }
+        })
+      );
+      
+      console.log("=== DETAILED SAVED RECIPES ===");
+      detailedRecipes.forEach(recipe => {
+        console.log(`Saved recipe ${recipe.recipeid}: ${recipe.name}, Rating: ${recipe.averageRating}, Image URL: ${recipe.imageUrl || recipe.imageurl || 'NONE'}`);
+      });
+      
+      setSavedRecipes(detailedRecipes);
     } catch (error) {
       console.error('Error fetching saved recipes:', error);
       console.error('Error details:', error.response?.data || error.message);
       setSavedRecipes([]);
     } finally {
       setSavedRecipesLoading(false);
+      console.log("=== END SAVED RECIPES FETCH ===");
     }
   };
 
@@ -589,6 +631,21 @@ const UserAccount = () => {
 
   const isAdmin = user.isadmin;
 
+  // Helper function to display star ratings
+  const renderStarRating = (rating) => {
+    if (!rating || rating === 'N/A') {
+      return <span><FontAwesomeIcon icon={faStar} /> N/A</span>;
+    }
+    
+    const ratingNum = parseFloat(rating);
+    return (
+      <span className="star-rating">
+        <FontAwesomeIcon icon={faStar} className="star-filled" />
+        <span className="rating-value">{ratingNum.toFixed(1)}</span>
+      </span>
+    );
+  };
+
   return (
     <div className="user-account-container">
       <div className="tabs-container">
@@ -717,7 +774,7 @@ const UserAccount = () => {
                           <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
                         </span>
                         <span className="rating">
-                          <FontAwesomeIcon icon={faStar} /> N/A
+                          {renderStarRating(recipe.averageRating)}
                         </span>
                       </div>
                       <p className="recipe-description">{recipe.description || 'No description available'}</p>
@@ -811,8 +868,8 @@ const UserAccount = () => {
                         <span className="prep-time">
                           <FontAwesomeIcon icon={faClock} /> {recipe.recipetime || 'N/A'} min
                         </span>
-                        <span className="saved-date">
-                          <FontAwesomeIcon icon={faBookmark} /> {recipe.dateSaved ? new Date(recipe.dateSaved).toLocaleDateString() : 'N/A'}
+                        <span className="rating">
+                          {renderStarRating(recipe.averageRating)}
                         </span>
                       </div>
                       <p className="recipe-description">{recipe.description?.substring(0, 100) || 'No description available'}</p>

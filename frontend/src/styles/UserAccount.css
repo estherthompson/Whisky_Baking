@@ -1010,3 +1010,23 @@ button:disabled:hover {
   font-size: 0.8rem;
   color: #888;
 }
+
+/* Star rating styles */
+.star-rating {
+  display: inline-flex;
+  align-items: center;
+}
+
+.star-filled {
+  color: #FFD700;
+  margin-right: 4px;
+}
+
+.rating-value {
+  font-weight: bold;
+}
+
+.rating {
+  display: flex;
+  align-items: center;
+}
