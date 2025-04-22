@@ -19,6 +19,9 @@ const UploadRecipe = () => {
     }],
     image: null // Add image to formData
   });
+  const [imagePreview, setImagePreview] = useState(null);
+  const [imageUploading, setImageUploading] = useState(false);
+  const [recipeId, setRecipeId] = useState(null);
   const [ingredientsList, setIngredientsList] = useState([]);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -100,10 +103,20 @@ const UploadRecipe = () => {
   const handleChange = (e, index) => {
     const { name, value, type, files } = e.target;
     if (type === 'file') {
-      setFormData({
-        ...formData,
-        image: files[0] // Handle file input
-      });
+      const file = files[0];
+      if (file) {
+        // Show image preview
+        const reader = new FileReader();
+        reader.onloadend = () => {
+          setImagePreview(reader.result);
+        };
+        reader.readAsDataURL(file);
+        
+        setFormData({
+          ...formData,
+          image: file // Store the file object
+        });
+      }
     } else if (name === 'wholeNumber') {
       // Allow only numbers and one decimal point
       const numericValue = value.replace(/[^0-9.]/g, '');
@@ -297,10 +310,97 @@ const UploadRecipe = () => {
         ingredients: formattedIngredients
       };
 
-      console.log('Submitting recipe:', recipeData);
+      console.log('Submitting recipe data:', recipeData);
+      console.log('Has image to upload:', !!formData.image);
+      
+      // First create the recipe
+      console.log('Step 1: Creating recipe...');
       const response = await axios.post('http://localhost:5001/api/recipes', recipeData);
+      console.log('Recipe creation API response:', response.data);
+      
+      // Check that we got a recipe ID back
+      if (!response.data || !response.data.recipeid) {
+        console.error('Recipe created but no recipe ID returned:', response.data);
+        setError('Recipe was created but could not upload image: No recipe ID returned');
+        return;
+      }
+      
+      // Get the recipe ID from the response
+      const createdRecipeId = response.data.recipeid;
+      console.log('Extracted recipe ID from response:', createdRecipeId);
+      setRecipeId(createdRecipeId);
+      
+      // If there's an image to upload, do it now
+      let imageUrl = null;
+      let imageSuccess = false;
+      if (formData.image && createdRecipeId) {
+        console.log('Step 2: Uploading image for recipe ID:', createdRecipeId);
+        setImageUploading(true);
+        try {
+          // Use FileReader to convert the image to base64
+          const fileReader = new FileReader();
+          
+          // Create a promise to handle the asynchronous FileReader
+          const readFilePromise = new Promise((resolve, reject) => {
+            fileReader.onload = () => resolve(fileReader.result);
+            fileReader.onerror = (error) => reject(error);
+          });
+          
+          // Start reading the file
+          fileReader.readAsDataURL(formData.image);
+          
+          // Wait for the file to be read
+          const base64Data = await readFilePromise;
+          console.log('Image converted to base64, length:', base64Data.length);
+          
+          // Upload the image
+          const imageResponse = await axios.post(
+            `http://localhost:5001/api/recipes/${createdRecipeId}/image`, 
+            { file: base64Data }
+          );
+          
+          console.log('Image upload response:', imageResponse.data);
+          
+          // Check for image URL in different formats (imageUrl or imageurl)
+          if (imageResponse.data) {
+            if (imageResponse.data.imageUrl) {
+              imageUrl = imageResponse.data.imageUrl;
+              imageSuccess = true;
+              console.log('Image uploaded successfully, URL from imageUrl:', imageUrl);
+            } else if (imageResponse.data.imageurl) {
+              imageUrl = imageResponse.data.imageurl;
+              imageSuccess = true;
+              console.log('Image uploaded successfully, URL from imageurl:', imageUrl);
+            } else {
+              console.warn('Image upload succeeded but no URL returned:', imageResponse.data);
+            }
+          } else {
+            console.warn('Image upload succeeded but empty response received');
+          }
+        } catch (imageError) {
+          console.error('Image upload failed:', imageError);
+          console.error('Error response:', imageError.response?.data);
+          setError(`Recipe created but image upload failed: ${imageError.response?.data?.error || imageError.message}`);
+        } finally {
+          setImageUploading(false);
+        }
+      } else {
+        console.log('No image to upload or missing recipe ID', {
+          hasImage: !!formData.image,
+          recipeId: createdRecipeId
+        });
+      }
 
-      setSuccess('Recipe uploaded successfully!');
+      // Set success message
+      if (imageSuccess) {
+        setSuccess('Recipe and image uploaded successfully!');
+      } else if (imageUrl) {
+        setSuccess('Recipe uploaded successfully with image!');
+      } else if (formData.image) {
+        setSuccess('Recipe uploaded successfully but there was a problem with the image.');
+      } else {
+        setSuccess('Recipe uploaded successfully!');
+      }
       
       // Reset form after successful submission
       setFormData({
@@ -317,9 +417,11 @@ const UploadRecipe = () => {
         }],
         image: null
       });
+      setImagePreview(null);
     } catch (err) {
       console.error('Error uploading recipe:', err);
-      setError(err.response?.data?.message || 'Failed to upload recipe. Please try again.');
+      console.error('Error response:', err.response?.data);
+      setError(err.response?.data?.error || 'Failed to upload recipe. Please try again.');
     }
   };
 
@@ -335,6 +437,7 @@ const UploadRecipe = () => {
       <h2>Upload New Recipe</h2>
       {error && <div className="error-message">{error}</div>}
       {success && <div className="success-message">{success}</div>}
+      {imageUploading && <div className="loading-message">Uploading image...</div>}
       
       <form onSubmit={handleSubmit} className="recipe-form">
         <div className="form-group">
@@ -362,13 +465,24 @@ const UploadRecipe = () => {
 
         <div className="form-group">
           <label htmlFor="image">Recipe Image</label>
-          <input
-            type="file"
-            id="image"
-            name="image"
-            accept="image/*"
-            onChange={handleChange}
-          />
+          <div className="image-upload-container">
+            {imagePreview && (
+              <div className="image-preview">
+                <img 
+                  src={imagePreview} 
+                  alt="Recipe preview" 
+                  className="recipe-image-preview" 
+                />
+              </div>
+            )}
+            <input
+              type="file"
+              id="image"
+              name="image"
+              accept="image/*"
+              onChange={handleChange}
+            />
+          </div>
         </div>
 
         <div className="instructions-section">

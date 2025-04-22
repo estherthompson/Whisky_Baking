@@ -410,7 +410,7 @@ export const getAllRecipes = async (req, res) => {
                 name: recipe.name,
                 description: recipe.description,
                 recipetime: recipe.recipetime,
-                image_url: recipe.image_url,
+                imageUrl: recipe.imageUrl,
                 averageRating: avgRating,
                 userid: recipe.userid,
                 dietary_restrictions: recipe.recipe_ingredient 
@@ -692,24 +692,23 @@ export const getUserRatings = async (req, res) => {
 // Upload recipe image
 export const uploadRecipeImage = async (req, res) => {
     try {
-        const { recipeId } = req.params;
-        const { file, userid } = req.body;
+        console.log('Recipe image upload request received');
         
-        if (!recipeId || !file || !userid) {
+        const { recipeId } = req.params;
+        const { file } = req.body;
+        
+        console.log('Request params:', { recipeId });
+        console.log('File received:', file ? `${file.substring(0, 40)}... (${file.length} chars)` : 'No file');
+        
+        if (!recipeId || !file) {
+            console.error('Missing required params:', { hasRecipeId: !!recipeId, hasFile: !!file });
             return res.status(400).json({ 
-                error: 'Recipe ID, user ID, and file are required' 
+                error: 'Recipe ID and file are required' 
             });
         }
 
-        // Convert userid to number for consistency
-        const useridNum = parseInt(userid, 10);
-        if (isNaN(useridNum)) {
-            return res.status(400).json({ 
-                error: 'User ID must be a valid number'
-            });
-        }
-
-        // Get recipe from database to verify it exists and belongs to the user
+        // Get recipe from database to verify it exists
+        console.log('Fetching recipe with ID:', recipeId);
         const { data: recipe, error: recipeError } = await supabase
             .from('recipe')
             .select('recipeid, userid')
@@ -717,82 +716,160 @@ export const uploadRecipeImage = async (req, res) => {
             .single();
 
         if (recipeError || !recipe) {
-            console.error('Error fetching recipe:', recipeError);
+            console.error('Error fetching recipe:', recipeError?.message || 'Recipe not found');
             return res.status(404).json({ 
                 error: 'Recipe not found',
                 details: recipeError?.message || 'Recipe does not exist'
             });
         }
 
-        // Check if the recipe belongs to the user
-        if (recipe.userid !== useridNum) {
-            console.log('Recipe userid:', recipe.userid, 'Request userid:', useridNum);
-            return res.status(403).json({ 
-                error: 'Unauthorized: You do not have permission to modify this recipe' 
+        console.log('Recipe found:', recipe);
+        
+        if (!recipe.userid) {
+            console.error('Recipe has no associated userid');
+            return res.status(400).json({
+                error: 'Recipe has no associated user ID',
+                details: 'Cannot store image without user ID'
             });
         }
 
         // Decode base64 file
-        const fileData = Buffer.from(file.split(',')[1], 'base64');
-        const fileExtension = file.split(';')[0].split('/')[1];
-        // Create a file path that includes userid and recipeId
-        const filePath = `${useridNum}/recipes/${recipeId}.${fileExtension}`;
-
-        // Upload to Supabase Storage using recipe-photos bucket
-        const { data, error } = await supabase
-            .storage
-            .from('recipe-photos')
-            .upload(filePath, fileData, {
-                contentType: file.split(';')[0].split(':')[1],
-                upsert: true
-            });
-
-        if (error) {
-            console.error('Error uploading image:', error);
-            return res.status(500).json({ 
-                error: 'Failed to upload image',
-                details: error.message
+        console.log('Decoding base64 file');
+        let fileData;
+        try {
+            // Make sure to handle different base64 formats
+            let base64Part = file;
+            if (file.includes(',')) {
+                base64Part = file.split(',')[1];
+            }
+            fileData = Buffer.from(base64Part, 'base64');
+            console.log('File decoded, size:', fileData.length, 'bytes');
+        } catch (decodeError) {
+            console.error('Error decoding file:', decodeError);
+            return res.status(400).json({
+                error: 'Invalid file format',
+                details: 'Could not decode base64 file'
             });
         }
-
-        // Get public URL
-        const publicUrlData = supabase
-            .storage
-            .from('recipe-photos')
-            .getPublicUrl(filePath);
         
-        // Extract the URL from the object (depending on Supabase version)
-        const publicURL = publicUrlData.data?.publicUrl || publicUrlData.publicURL;
+        // Get file extension from MIME type
+        let fileExtension = 'jpg'; // Default to jpg
+        try {
+            if (file.includes('image/')) {
+                const mimeType = file.split(';')[0].split(':')[1].trim();
+                fileExtension = mimeType.split('/')[1];
+                console.log('File MIME type:', mimeType, 'Extension:', fileExtension);
+            } else {
+                console.log('Using default extension:', fileExtension);
+            }
+        } catch (mimeError) {
+            console.error('Error parsing MIME type, using default:', mimeError);
+        }
         
-        console.log('Generated public URL:', publicURL);
+        // Create a file path using the user ID from the recipe record
+        const filePath = `${recipe.userid}/recipes/${recipeId}.${fileExtension}`;
+        console.log('Generated file path for storage:', filePath);
 
-        if (!publicURL) {
-            console.error('Failed to generate public URL');
+        try {
+            // Check if the bucket exists
+            const { data: buckets } = await supabase.storage.listBuckets();
+            console.log('Available buckets:', buckets);
+            
+            // Upload to Supabase Storage using recipe-photos bucket
+            console.log('Uploading to Supabase storage bucket: recipe-photos');
+            
+            // Set content type correctly
+            let contentType = 'image/jpeg'; // default
+            if (file.includes('data:')) {
+                const mimeMatch = file.match(/data:([^;]+);/);
+                if (mimeMatch && mimeMatch[1]) {
+                    contentType = mimeMatch[1];
+                }
+            }
+            console.log('Using content type:', contentType);
+            
+            const { data, error } = await supabase
+                .storage
+                .from('recipe-photos')
+                .upload(filePath, fileData, {
+                    contentType,
+                    upsert: true
+                });
+
+            if (error) {
+                console.error('Supabase storage upload error:', error);
+                console.error('Error details:', error.message);
+                return res.status(500).json({ 
+                    error: 'Failed to upload image',
+                    details: error.message
+                });
+            }
+
+            console.log('Upload successful, storage response:', data);
+
+            // Get public URL
+            console.log('Getting public URL for file');
+            const publicUrlData = supabase
+                .storage
+                .from('recipe-photos')
+                .getPublicUrl(filePath);
+            
+            console.log('Public URL data from Supabase:', publicUrlData);
+            
+            // Extract the URL from the object (depending on Supabase version)
+            let publicURL = '';
+            if (publicUrlData.data && publicUrlData.data.publicUrl) {
+                publicURL = publicUrlData.data.publicUrl;
+            } else if (publicUrlData.publicURL) {
+                publicURL = publicUrlData.publicURL;
+            } else if (typeof publicUrlData === 'string') {
+                publicURL = publicUrlData;
+            }
+            
+            console.log('Generated public URL:', publicURL);
+
+            if (!publicURL) {
+                console.error('Failed to generate public URL');
+                return res.status(500).json({ 
+                    error: 'Failed to generate public URL for image' 
+                });
+            }
+
+            // Update recipe with new image URL - using imageUrl for database column name
+            console.log('Updating recipe with image URL in imageurl column');
+            const { data: updateData, error: updateError } = await supabase
+                .from('recipe')
+                .update({ imageurl: publicURL })
+                .eq('recipeid', recipeId)
+                .select();
+
+            if (updateError) {
+                console.error('Error updating recipe with image URL:', updateError);
+                return res.status(500).json({ 
+                    error: 'Failed to update recipe with image URL',
+                    details: updateError.message
+                });
+            }
+
+            console.log('Recipe updated successfully:', updateData);
+            
+            // Send back the image URL as both formats for compatibility
+            return res.json({ 
+                message: 'Recipe image uploaded successfully',
+                imageurl: publicURL,
+                imageUrl: publicURL // Include both formats for compatibility
+            });
+            
+        } catch (storageError) {
+            console.error('Storage operation error:', storageError);
             return res.status(500).json({ 
-                error: 'Failed to generate public URL for image' 
+                error: 'Storage operation failed',
+                details: storageError.message
             });
         }
-
-        // Update recipe with new image URL
-        const { error: updateError } = await supabase
-            .from('recipe')
-            .update({ image_url: publicURL })
-            .eq('recipeid', recipeId);
-
-        if (updateError) {
-            console.error('Error updating recipe with image URL:', updateError);
-            return res.status(500).json({ 
-                error: 'Failed to update recipe with image URL',
-                details: updateError.message
-            });
-        }
-
-        res.json({ 
-            message: 'Recipe image uploaded successfully',
-            imageUrl: publicURL 
-        });
     } catch (error) {
-        console.error('Server error:', error);
+        console.error('Unexpected server error in uploadRecipeImage:', error);
+        console.error('Error stack:', error.stack);
         res.status(500).json({
             error: 'An unexpected error occurred',
             details: error.message
