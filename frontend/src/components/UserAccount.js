@@ -17,7 +17,8 @@ import {
   faComment, 
   faPlus, 
   faBookmark,
-  faHistory
+  faHistory,
+  faTimes
 } from '@fortawesome/free-solid-svg-icons';
 import RecipeModal from './RecipeModal';
 
@@ -525,6 +526,55 @@ const UserAccount = () => {
     }
   };
 
+  const removeSavedRecipe = async (recipeId, event) => {
+    // Prevent the click event from bubbling up to the parent card
+    event.stopPropagation();
+    
+    if (!user) {
+      console.error("Cannot remove recipe: No user logged in");
+      alert('Please log in to remove saved recipes');
+      return;
+    }
+    
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      console.error("Cannot find user ID in user object", user);
+      alert('User ID not found. Please try logging out and back in.');
+      return;
+    }
+    
+    console.log(`Attempting to remove saved recipe ${recipeId} for user ${userId}`);
+    
+    // Immediately update UI for better user experience
+    const originalRecipes = [...savedRecipes];
+    setSavedRecipes(savedRecipes.filter(recipe => recipe.recipeid !== recipeId));
+    
+    try {
+      // Use the POST method with _method=DELETE for compatibility with servers that don't support DELETE
+      const response = await axios({
+        method: 'POST',
+        url: `http://localhost:5001/api/user/${userId}/saved-recipes/${recipeId}`,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-HTTP-Method-Override': 'DELETE'
+        }
+      });
+      
+      console.log('Delete response:', response.data);
+      
+      // Feedback was already provided by optimistically updating the UI
+    } catch (error) {
+      console.error('Error removing saved recipe:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      
+      // Revert the UI change on error
+      setSavedRecipes(originalRecipes);
+      
+      // Show error message
+      alert(`Failed to remove recipe: ${error.response?.data?.error || error.message}. Please try again.`);
+    }
+  };
+
   if (!user) {
     return null;
   }
@@ -732,6 +782,13 @@ const UserAccount = () => {
                           );
                         }
                       })()}
+                      <button 
+                        className="remove-saved-btn"
+                        onClick={(e) => removeSavedRecipe(recipe.recipeid, e)}
+                        aria-label="Remove from saved recipes"
+                      >
+                        <FontAwesomeIcon icon={faTimes} />
+                      </button>
                     </div>
                     <div className="recipe-info">
                       <h3 className="recipe-name">{recipe.name || 'Untitled Recipe'}</h3>

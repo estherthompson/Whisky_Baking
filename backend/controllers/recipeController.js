@@ -887,3 +887,57 @@ export const uploadRecipeImage = async (req, res) => {
         });
     }
 };
+
+// Delete saved recipe
+export const deleteSavedRecipe = async (req, res) => {
+    try {
+        const userid = req.params.userId;
+        const recipeid = req.params.recipeId;
+        
+        console.log('Delete saved recipe request received:', {
+            userid,
+            recipeid,
+            params: req.params
+        });
+        
+        if (!userid || !recipeid) {
+            console.error('Missing required parameters:', { userid, recipeid });
+            return res.status(400).json({
+                error: 'User ID and Recipe ID are required'
+            });
+        }
+        
+        // Convert ids to numbers for consistency
+        const useridNum = parseInt(userid, 10);
+        const recipeidNum = parseInt(recipeid, 10);
+        
+        console.log('Converted IDs:', { useridNum, recipeidNum });
+        
+        // Delete the saved recipe
+        console.log(`Attempting to delete saved recipe where userid=${useridNum} and recipeid=${recipeidNum}`);
+        const { data, error } = await supabase
+            .from('saved_recipes')
+            .delete()
+            .eq('userid', useridNum)
+            .eq('recipeid', recipeidNum);
+        
+        if (error) {
+            console.error('Error deleting saved recipe:', error);
+            return res.status(400).json({
+                error: 'Failed to delete saved recipe',
+                details: error.message
+            });
+        }
+        
+        console.log('Delete operation successful, response:', data);
+        return res.status(200).json({
+            message: 'Recipe removed from saved recipes successfully'
+        });
+    } catch (error) {
+        console.error('Server error in deleteSavedRecipe:', error);
+        res.status(500).json({
+            error: 'An unexpected error occurred',
+            details: error.message
+        });
+    }
+};
