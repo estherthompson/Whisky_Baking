@@ -213,7 +213,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
     if (!userString) {
       setReviewMessage({
         type: 'error',
-        text: 'You need to log in to write a review. Please log in through User Account.'
+        text: 'You must be logged in to write a review. Please log in through User Account.'
       });
       setTimeout(() => setReviewMessage(null), 5000);
       return;
@@ -488,7 +488,18 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
               <div className="add-review-section">
                 <button 
                   className="add-review-button"
-                  onClick={() => setShowReviewForm(true)}
+                  onClick={() => {
+                    const userString = localStorage.getItem('user');
+                    if (!userString) {
+                      setReviewMessage({
+                        type: 'error',
+                        text: 'You must be logged in to write a review. Please log in through User Account.'
+                      });
+                      setTimeout(() => setReviewMessage(null), 5000);
+                      return;
+                    }
+                    setShowReviewForm(true);
+                  }}
                 >
                   Write a Review
                 </button>
