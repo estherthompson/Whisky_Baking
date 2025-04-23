@@ -207,6 +207,18 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     
+    // Get user from localStorage first to check authentication
+    const userString = localStorage.getItem('user');
+    
+    if (!userString) {
+      setReviewMessage({
+        type: 'error',
+        text: 'You must be logged in to write a review. Please log in through User Account.'
+      });
+      setTimeout(() => setReviewMessage(null), 5000);
+      return;
+    }
+    
     if (rating === 0) {
       setReviewMessage({
         type: 'error',
@@ -226,26 +238,6 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
     setIsSubmittingReview(true);
     
     try {
-      // Get user from localStorage
-      const userString = localStorage.getItem('user');
-      
-      if (!userString) {
-        console.log('User not logged in, saving draft and redirecting to login');
-        // Save the current recipe and review info to localStorage
-        const draftData = {
-          recipeId: recipe.recipeid,
-          recipeName: recipe.name,
-          rating: rating,
-          reviewText: reviewText
-        };
-        console.log('Saving draft review:', draftData);
-        localStorage.setItem('draftReview', JSON.stringify(draftData));
-        
-        // Redirect to login page
-        navigate('/login');
-        return;
-      }
-
       const user = JSON.parse(userString);
       
       // Check for user ID using the same approach as in handleSaveClick
@@ -496,7 +488,18 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
               <div className="add-review-section">
                 <button 
                   className="add-review-button"
-                  onClick={() => setShowReviewForm(true)}
+                  onClick={() => {
+                    const userString = localStorage.getItem('user');
+                    if (!userString) {
+                      setReviewMessage({
+                        type: 'error',
+                        text: 'You must be logged in to write a review. Please log in through User Account.'
+                      });
+                      setTimeout(() => setReviewMessage(null), 5000);
+                      return;
+                    }
+                    setShowReviewForm(true);
+                  }}
                 >
                   Write a Review
                 </button>
