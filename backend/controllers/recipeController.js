@@ -11,7 +11,6 @@ export const createRecipe = async (req, res) => {
             ingredients = []
         } = req.body;
 
-        // Log the received data
         console.log('Received recipe data:', {
             name,
             instructions,
@@ -21,7 +20,6 @@ export const createRecipe = async (req, res) => {
             ingredientsCount: ingredients.length
         });
 
-        // Convert recipeTime to integer
         const recipeTimeInt = parseInt(recipeTime, 10);
         if (isNaN(recipeTimeInt)) {
             console.log('Invalid recipeTime value:', recipeTime);
@@ -31,7 +29,6 @@ export const createRecipe = async (req, res) => {
             });
         }
 
-        // Validate required fields
         if (!name || !instructions || !description || !recipeTimeInt) {
             const missingFields = [];
             if (!name) missingFields.push('name');
@@ -46,7 +43,6 @@ export const createRecipe = async (req, res) => {
             });
         }
 
-        // Get the last recipe ID to generate a new unique ID
         const { data: lastRecipe, error: lastRecipeError } = await supabase
             .from('recipe')
             .select('recipeid')
@@ -65,7 +61,6 @@ export const createRecipe = async (req, res) => {
         const nextRecipeId = lastRecipe ? lastRecipe.recipeid + 1 : 1;
         console.log('Attempting to insert recipe with ID:', nextRecipeId);
         
-        // Insert the recipe with the generated ID and userid
         const { data: recipeData, error: recipeError } = await supabase
             .from('recipe')
             .insert([
@@ -75,7 +70,7 @@ export const createRecipe = async (req, res) => {
                     instructions,
                     description,
                     recipetime: recipeTimeInt,
-                    userid: userid  // Adding userid to the recipe table
+                    userid: userid  
                 }
             ])
             .select()
@@ -89,7 +84,6 @@ export const createRecipe = async (req, res) => {
             });
         }
 
-        // Process ingredients and insert recipe_ingredient associations
         if (ingredients && ingredients.length > 0) {
             console.log('Processing ingredients:', ingredients.length);
             
@@ -98,9 +92,7 @@ export const createRecipe = async (req, res) => {
             for (const ing of ingredients) {
                 let ingredientId = ing.ingredientId;
                 
-                // If no ingredient ID provided, check if it exists by name or create it
                 if (!ingredientId) {
-                    // Check if ingredient exists
                     const { data: existingIng } = await supabase
                         .from('ingredient')
                         .select('ingredientid')
@@ -108,11 +100,9 @@ export const createRecipe = async (req, res) => {
                         .maybeSingle();
                     
                     if (existingIng) {
-                        // Use existing ingredient
                         ingredientId = existingIng.ingredientid;
                         console.log(`Using existing ingredient: ${ing.name}, ID: ${ingredientId}`);
                     } else {
-                        // Get max ingredient ID to generate new ID
                         const { data: lastIng } = await supabase
                             .from('ingredient')
                             .select('ingredientid')
@@ -122,14 +112,14 @@ export const createRecipe = async (req, res) => {
                             
                         const nextIngId = lastIng ? lastIng.ingredientid + 1 : 1;
                         
-                        // Create new ingredient
+
                         const { data: newIng, error: newIngError } = await supabase
                             .from('ingredient')
                             .insert([
                                 {
                                     ingredientid: nextIngId,
                                     name: ing.name,
-                                    category: 'Other' // Default category
+                                    category: 'Other' 
                                 }
                             ])
                             .select()
@@ -137,7 +127,7 @@ export const createRecipe = async (req, res) => {
                             
                         if (newIngError) {
                             console.error('Error creating ingredient:', newIngError);
-                            continue; // Skip this ingredient if error
+                            continue; 
                         }
                         
                         ingredientId = newIng.ingredientid;
@@ -154,7 +144,6 @@ export const createRecipe = async (req, res) => {
                 }
             }
             
-            // Insert recipe_ingredient relationships if we have any
             if (recipeIngredients.length > 0) {
                 console.log('Inserting recipe ingredients:', recipeIngredients);
                 const { error: recipeIngError } = await supabase
@@ -163,12 +152,10 @@ export const createRecipe = async (req, res) => {
                     
                 if (recipeIngError) {
                     console.error('Error adding recipe ingredients:', recipeIngError);
-                    // We won't fail the whole operation if ingredients fail
                 }
             }
         }
 
-        // We'll still save to saved_recipes for backward compatibility
         if (userid) {
             const { error: savedError } = await supabase
                 .from('saved_recipes')
@@ -180,7 +167,6 @@ export const createRecipe = async (req, res) => {
 
             if (savedError) {
                 console.error('Error saving recipe for user:', savedError);
-                // We don't need to fail the entire operation if this step fails
             }
         }
 
@@ -199,7 +185,6 @@ export const createRecipe = async (req, res) => {
 
 export const savedRecipe = async (req, res) => {
     try {
-        // Accept both parameter naming conventions for flexibility
         const userid = req.body.userid || req.body.userId;
         const recipeId = req.body.recipeId;
         const dateSaved = req.body.dateSaved || req.body.datesaved;
@@ -217,7 +202,6 @@ export const savedRecipe = async (req, res) => {
             });
         }
 
-        // Check if recipe is already saved
         const { data: existingSave, error: checkError } = await supabase
             .from('saved_recipes')
             .select('*')
@@ -239,7 +223,6 @@ export const savedRecipe = async (req, res) => {
             });
         }
 
-        // Use the provided dateSaved or generate a new timestamp
         const dateToSave = dateSaved || new Date().toISOString();
         console.log('Saving recipe with date:', dateToSave);
 
@@ -278,7 +261,6 @@ export const getRecipeById = async (req, res) => {
     try {
         const { id } = req.params;
 
-        // Get recipe with ingredients and ratings
         const { data: recipe, error: recipeError } = await supabase
             .from('recipe')
             .select(`
@@ -311,21 +293,18 @@ export const getRecipeById = async (req, res) => {
             });
         }
 
-        // Calculate average rating
         let averageRating = 0;
         if (recipe.rating && recipe.rating.length > 0) {
             const totalRating = recipe.rating.reduce((sum, r) => sum + r.score, 0);
             averageRating = totalRating / recipe.rating.length;
         }
 
-        // Format ingredients
         const ingredients = recipe.recipe_ingredient.map(ri => ({
             name: ri.ingredient.name,
             ingredientid: ri.ingredient.ingredientid,
             quantity: ri.quantity
         }));
 
-        // Format the response
         const formattedRecipe = {
             ...recipe,
             ingredients,
@@ -352,7 +331,6 @@ export const getAllRecipes = async (req, res) => {
         console.log('Fetching recipes with filters:', req.query);
         console.log('Raw query object:', JSON.stringify(req.query));
         
-        // Explicitly extract the userid in lowercase
         const userid = req.query.userid;
         const search = req.query.search;
         const dietary = req.query.dietary;
@@ -360,7 +338,6 @@ export const getAllRecipes = async (req, res) => {
         console.log('Processing userid filter (lowercase):', userid);
         console.log('Alternative check - userId (uppercase):', req.query.userId);
         
-        // Start building the query
         let query = supabase
             .from('recipe')
             .select(`
@@ -376,21 +353,17 @@ export const getAllRecipes = async (req, res) => {
                 rating (score)
             `);
 
-        // Apply search filter if provided
         if (search) {
             query = query.ilike('name', `%${search}%`);
         }
 
-        // Apply dietary restrictions filter if provided
         if (dietary) {
             const restrictions = dietary.split(',');
             query = query.in('recipe_ingredient.ingredient.dietary_restriction_ingredient.dietary_restriction.name', restrictions);
         }
 
-        // Filter by userid if provided - for "My Recipes" functionality
         if (userid) {
             console.log('Filtering recipes by userid:', userid);
-            // Try to convert userid to a number if it's a string
             const useridNum = parseInt(userid, 10);
             if (!isNaN(useridNum)) {
                 console.log('Using numeric userid for filtering:', useridNum);
@@ -401,7 +374,6 @@ export const getAllRecipes = async (req, res) => {
             }
         }
 
-        // Execute the query
         const { data: recipes, error: recipesError } = await query
             .order('recipeid', { ascending: false });
 
@@ -414,7 +386,6 @@ export const getAllRecipes = async (req, res) => {
             });
         }
 
-        // Calculate average ratings and format response
         const formattedRecipes = recipes.map(recipe => {
             const avgRating = recipe.rating && recipe.rating.length > 0
                 ? (recipe.rating.reduce((acc, curr) => acc + curr.score, 0) / recipe.rating.length).toFixed(1)
@@ -454,13 +425,11 @@ export const getAllRecipes = async (req, res) => {
     }
 };
 
-// Add this new function to handle creating a rating for a recipe
 export const addRatingToRecipe = async (req, res) => {
     try {
         const { recipeid } = req.params;
         const { userid, score, reviewtext } = req.body;
 
-        // First check if recipe exists
         const { data: recipe, error: recipeError } = await supabase
             .from('recipe')
             .select('recipeid')
@@ -474,7 +443,6 @@ export const addRatingToRecipe = async (req, res) => {
             });
         }
 
-        // Check if user has already rated this recipe
         const { data: existingRating, error: checkError } = await supabase
             .from('rating')
             .select('ratingid')
@@ -488,7 +456,6 @@ export const addRatingToRecipe = async (req, res) => {
             });
         }
 
-        // Get the last rating ID
         const { data: lastRating } = await supabase
             .from('rating')
             .select('ratingid')
@@ -498,7 +465,6 @@ export const addRatingToRecipe = async (req, res) => {
 
         const nextRatingId = lastRating ? lastRating.ratingid + 1 : 1;
 
-        // Create the new rating
         const { data: rating, error } = await supabase
             .from('rating')
             .insert([
@@ -536,58 +502,11 @@ export const addRatingToRecipe = async (req, res) => {
     }
 };
 
-// Debug function to directly test querying by userid
-export const debugGetUserRecipes = async (req, res) => {
-    try {
-        const userid = req.params.userid;
-        console.log('Debug - querying with userid:', userid);
-        
-        // Try different formats of userid to see which one works
-        const useridNum = parseInt(userid, 10);
-        console.log('Debug - userid as number:', useridNum);
-        
-        // Direct query with no joins to simplify debugging
-        const { data: recipes, error } = await supabase
-            .from('recipe')
-            .select('*')
-            .eq('userid', useridNum);
-            
-        console.log('Debug - direct query results:', {
-            count: recipes?.length || 0,
-            error: error
-        });
-        
-        // Also try with the original string value
-        const { data: recipes2, error: error2 } = await supabase
-            .from('recipe')
-            .select('*')
-            .eq('userid', userid);
-            
-        console.log('Debug - string value query results:', {
-            count: recipes2?.length || 0,
-            error: error2
-        });
-        
-        // Send the response with the number results
-        res.status(200).json({
-            message: 'Debug query results',
-            numberResults: recipes || [],
-            stringResults: recipes2 || []
-        });
-    } catch (error) {
-        console.error('Debug query error:', error);
-        res.status(500).json({
-            error: 'Debug query failed',
-            details: error.message
-        });
-    }
-};
 
-// Function to get all saved recipes for a specific user
+
 export const getSavedRecipes = async (req, res) => {
     try {
-        // Fix parameter name to match route definition
-        const userid = req.params.userId; // Changed from 'userid' to 'userId' to match route
+        const userid = req.params.userId; 
         console.log('Getting saved recipes for userId:', userid);
         
         if (!userid) {
@@ -596,10 +515,8 @@ export const getSavedRecipes = async (req, res) => {
             });
         }
 
-        // Convert userid to number for consistency
         const useridNum = parseInt(userid, 10);
         
-        // Join saved_recipes with recipe table to get full recipe details
         const { data: savedRecipes, error } = await supabase
             .from('saved_recipes')
             .select(`
@@ -626,7 +543,6 @@ export const getSavedRecipes = async (req, res) => {
             });
         }
 
-        // Format the response to be more client-friendly
         const formattedRecipes = savedRecipes.map(item => ({
             ...item.recipe,
             dateSaved: item.datesaved
@@ -645,22 +561,20 @@ export const getSavedRecipes = async (req, res) => {
     }
 };
 
-// Function to get all ratings created by a specific user
 export const getUserRatings = async (req, res) => {
     try {
-        const userid = req.params.userid;
-        console.log('Getting ratings for userid:', userid);
+        const userId = req.params.userId;
+        console.log('Getting ratings for userId:', userId);
         
-        if (!userid) {
+        if (!userId) {
             return res.status(400).json({
                 error: 'User ID is required'
             });
         }
 
-        // Convert userid to number for consistency
-        const useridNum = parseInt(userid, 10);
+        const userIdNum = parseInt(userId, 10);
+        console.log('Using numeric userIdNum for query:', userIdNum);
         
-        // Join ratings with recipe table to get recipe details
         const { data: ratings, error } = await supabase
             .from('rating')
             .select(`
@@ -675,7 +589,7 @@ export const getUserRatings = async (req, res) => {
                     description
                 )
             `)
-            .eq('userid', useridNum)
+            .eq('userid', userIdNum)
             .order('dateposted', { ascending: false });
             
         if (error) {
@@ -686,19 +600,25 @@ export const getUserRatings = async (req, res) => {
             });
         }
 
-        // Format the response to match our activity format
+        console.log(`Found ${ratings ? ratings.length : 0} ratings for user ${userId}`);
+        
+        if (ratings && ratings.length > 0) {
+            console.log('First rating sample:', ratings[0]);
+        }
+        
         const formattedRatings = ratings.map(rating => ({
             id: rating.ratingid,
             recipe_id: rating.recipeid,
-            recipe_name: rating.recipe.name,
+            recipe_name: rating.recipe ? rating.recipe.name : 'Unknown Recipe',
             rating: rating.score,
-            review: rating.reviewtext,
+            review: rating.reviewtext || '',
             created_at: rating.dateposted
         }));
         
+        console.log('Formatted ratings for response:', formattedRatings);
         res.status(200).json(formattedRatings);
     } catch (error) {
-        console.error('Server error:', error);
+        console.error('Server error in getUserRatings:', error);
         res.status(500).json({
             error: 'An unexpected error occurred',
             details: error.message
@@ -706,7 +626,6 @@ export const getUserRatings = async (req, res) => {
     }
 };
 
-// Upload recipe image
 export const uploadRecipeImage = async (req, res) => {
     try {
         console.log('Recipe image upload request received');
@@ -724,7 +643,6 @@ export const uploadRecipeImage = async (req, res) => {
             });
         }
 
-        // Get recipe from database to verify it exists
         console.log('Fetching recipe with ID:', recipeId);
         const { data: recipe, error: recipeError } = await supabase
             .from('recipe')
@@ -750,11 +668,9 @@ export const uploadRecipeImage = async (req, res) => {
             });
         }
 
-        // Decode base64 file
         console.log('Decoding base64 file');
         let fileData;
         try {
-            // Make sure to handle different base64 formats
             let base64Part = file;
             if (file.includes(',')) {
                 base64Part = file.split(',')[1];
@@ -769,8 +685,7 @@ export const uploadRecipeImage = async (req, res) => {
             });
         }
         
-        // Get file extension from MIME type
-        let fileExtension = 'jpg'; // Default to jpg
+        let fileExtension = 'jpg'; 
         try {
             if (file.includes('image/')) {
                 const mimeType = file.split(';')[0].split(':')[1].trim();
@@ -783,20 +698,16 @@ export const uploadRecipeImage = async (req, res) => {
             console.error('Error parsing MIME type, using default:', mimeError);
         }
         
-        // Create a file path using the user ID from the recipe record
         const filePath = `${recipe.userid}/recipes/${recipeId}.${fileExtension}`;
         console.log('Generated file path for storage:', filePath);
 
         try {
-            // Check if the bucket exists
             const { data: buckets } = await supabase.storage.listBuckets();
             console.log('Available buckets:', buckets);
             
-            // Upload to Supabase Storage using recipe-photos bucket
             console.log('Uploading to Supabase storage bucket: recipe-photos');
             
-            // Set content type correctly
-            let contentType = 'image/jpeg'; // default
+            let contentType = 'image/jpeg'; 
             if (file.includes('data:')) {
                 const mimeMatch = file.match(/data:([^;]+);/);
                 if (mimeMatch && mimeMatch[1]) {
@@ -824,7 +735,6 @@ export const uploadRecipeImage = async (req, res) => {
 
             console.log('Upload successful, storage response:', data);
 
-            // Get public URL
             console.log('Getting public URL for file');
             const publicUrlData = supabase
                 .storage
@@ -833,7 +743,6 @@ export const uploadRecipeImage = async (req, res) => {
             
             console.log('Public URL data from Supabase:', publicUrlData);
             
-            // Extract the URL from the object (depending on Supabase version)
             let publicURL = '';
             if (publicUrlData.data && publicUrlData.data.publicUrl) {
                 publicURL = publicUrlData.data.publicUrl;
@@ -852,7 +761,6 @@ export const uploadRecipeImage = async (req, res) => {
                 });
             }
 
-            // Update recipe with new image URL - using imageUrl for database column name
             console.log('Updating recipe with image URL in imageurl column');
             const { data: updateData, error: updateError } = await supabase
                 .from('recipe')
@@ -870,11 +778,10 @@ export const uploadRecipeImage = async (req, res) => {
 
             console.log('Recipe updated successfully:', updateData);
             
-            // Send back the image URL as both formats for compatibility
             return res.json({ 
                 message: 'Recipe image uploaded successfully',
                 imageurl: publicURL,
-                imageUrl: publicURL // Include both formats for compatibility
+                imageUrl: publicURL 
             });
             
         } catch (storageError) {
@@ -894,7 +801,6 @@ export const uploadRecipeImage = async (req, res) => {
     }
 };
 
-// Delete saved recipe
 export const deleteSavedRecipe = async (req, res) => {
     try {
         const userid = req.params.userId;
@@ -913,13 +819,11 @@ export const deleteSavedRecipe = async (req, res) => {
             });
         }
         
-        // Convert ids to numbers for consistency
         const useridNum = parseInt(userid, 10);
         const recipeidNum = parseInt(recipeid, 10);
         
         console.log('Converted IDs:', { useridNum, recipeidNum });
         
-        // Delete the saved recipe
         console.log(`Attempting to delete saved recipe where userid=${useridNum} and recipeid=${recipeidNum}`);
         const { data, error } = await supabase
             .from('saved_recipes')

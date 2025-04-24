@@ -350,6 +350,30 @@ const Home = () => {
     ingredient.name.toLowerCase().includes(ingredientSearchQuery.toLowerCase())
   );
 
+  // Add useEffect for click outside handler
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (filterPanelRef.current && !filterPanelRef.current.contains(event.target) &&
+          availableIngredientsRef.current && !availableIngredientsRef.current.contains(event.target)) {
+        // Only close if the click isn't on the filter buttons
+        const filterButton = document.querySelector('.filter-button');
+        const ingredientsButton = document.querySelector('.available-ingredients-button');
+        
+        if (!filterButton.contains(event.target) && !ingredientsButton.contains(event.target)) {
+          if (showFilters) setShowFilters(false);
+          if (showAvailableIngredients) setShowAvailableIngredients(false);
+        }
+      }
+    }
+
+    // Add event listener
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      // Remove event listener on cleanup
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [showFilters, showAvailableIngredients]);
+
   return (
     <div className="home-container">
       <div 
@@ -369,14 +393,22 @@ const Home = () => {
               />
               <button 
                 className="available-ingredients-button"
-                onClick={() => setShowAvailableIngredients(!showAvailableIngredients)}
+                onClick={() => {
+                  setShowAvailableIngredients(!showAvailableIngredients);
+                  // Close filters panel if it's open
+                  if (showFilters) setShowFilters(false);
+                }}
                 aria-label="Available ingredients"
               >
                 <FontAwesomeIcon icon={faAppleWhole} />
               </button>
               <button 
                 className="filter-button"
-                onClick={() => setShowFilters(showFilters => !showFilters)}
+                onClick={() => {
+                  setShowFilters(!showFilters);
+                  // Close available ingredients panel if it's open
+                  if (showAvailableIngredients) setShowAvailableIngredients(false);
+                }}
                 aria-label="Filter recipes"
               >
                 <FontAwesomeIcon icon={faFilter} />
@@ -424,9 +456,9 @@ const Home = () => {
                 <button 
                   className="done-button"
                   onClick={() => {
-                    setShowAvailableIngredients(false)
+                    setShowAvailableIngredients(false);
                     fetchRecipes();
-                    }}
+                  }}
                 >
                   Done
                 </button>

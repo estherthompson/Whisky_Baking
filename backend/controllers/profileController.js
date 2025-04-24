@@ -1,6 +1,5 @@
 import supabase from '../config/supabaseClient.js';
 
-// Get profile by user ID
 export const getProfileByUserId = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -31,7 +30,6 @@ export const getProfileByUserId = async (req, res) => {
     }
 };
 
-// Create new profile
 export const createProfile = async (req, res) => {
     try {
         const { userId, username, bio, pronouns, imageUrl } = req.body;
@@ -40,7 +38,6 @@ export const createProfile = async (req, res) => {
             return res.status(400).json({ error: 'User ID and username are required' });
         }
 
-        // Check if profile already exists
         const { data: existingProfile } = await supabase
             .from('profile')
             .select('profileid')
@@ -51,7 +48,6 @@ export const createProfile = async (req, res) => {
             return res.status(400).json({ error: 'Profile already exists for this user' });
         }
 
-        // Create new profile
         const { data, error } = await supabase
             .from('profile')
             .insert([{
@@ -76,7 +72,6 @@ export const createProfile = async (req, res) => {
     }
 };
 
-// Update profile
 export const updateProfile = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -86,7 +81,6 @@ export const updateProfile = async (req, res) => {
             return res.status(400).json({ error: 'User ID is required' });
         }
 
-        // Check if profile exists
         const { data: existingProfile } = await supabase
             .from('profile')
             .select('profileid')
@@ -97,7 +91,6 @@ export const updateProfile = async (req, res) => {
             return res.status(404).json({ error: 'Profile not found' });
         }
 
-        // Update profile
         const { data, error } = await supabase
             .from('profile')
             .update({
@@ -122,7 +115,6 @@ export const updateProfile = async (req, res) => {
     }
 };
 
-// Upload profile image
 export const uploadProfileImage = async (req, res) => {
     try {
         const { userId } = req.params;
@@ -132,7 +124,6 @@ export const uploadProfileImage = async (req, res) => {
             return res.status(400).json({ error: 'User ID and file are required' });
         }
 
-        // Get user from database to verify
         const { data: user, error: userError } = await supabase
             .from('user_account')
             .select('userid')
@@ -144,11 +135,9 @@ export const uploadProfileImage = async (req, res) => {
             return res.status(404).json({ error: 'User not found' });
         }
 
-        // Decode base64 file
         const fileData = Buffer.from(file.split(',')[1], 'base64');
         const filePath = `${userId}/profile.${file.split(';')[0].split('/')[1]}`;
 
-        // Upload to Supabase Storage
         const { data, error } = await supabase
             .storage
             .from('profile-photos')
@@ -162,13 +151,11 @@ export const uploadProfileImage = async (req, res) => {
             return res.status(500).json({ error: 'Failed to upload image' });
         }
 
-        // Get public URL - fixed to work with newer Supabase versions
         const publicUrlData = supabase
             .storage
             .from('profile-photos')
             .getPublicUrl(filePath);
         
-        // Extract the URL from the object (depending on Supabase version)
         const publicURL = publicUrlData.data?.publicUrl || publicUrlData.publicURL;
         
         console.log('Generated public URL:', publicURL);
@@ -178,7 +165,6 @@ export const uploadProfileImage = async (req, res) => {
             return res.status(500).json({ error: 'Failed to generate public URL for image' });
         }
 
-        // Update profile with new image URL
         const { error: updateError } = await supabase
             .from('profile')
             .update({ imageurl: publicURL })

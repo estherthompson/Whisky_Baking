@@ -118,12 +118,10 @@ export const createIngredient = async (req, res) => {
     }
 };
 
-// Get ingredients used in a recipe
 export const getRecipeIngredients = async (req, res) => {
     try {
         const { recipeId } = req.params;
         
-        // Join recipe_ingredient with ingredient to get full ingredient details
         const { data: ingredients, error } = await supabase
             .from('recipe_ingredient')
             .select(`
@@ -148,7 +146,6 @@ export const getRecipeIngredients = async (req, res) => {
             });
         }
 
-        // Format response to be more user-friendly
         const formattedIngredients = ingredients.map(item => ({
             ...item.ingredient,
             quantity: item.quantity

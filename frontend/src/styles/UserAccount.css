@@ -718,136 +718,111 @@
 .activity-list {
   display: flex;
   flex-direction: column;
-  gap: 16px;
-  margin-top: 20px;
+  gap: 15px;
+  padding: 10px 0;
 }
 
 .activity-item {
-  background: white;
-  border-radius: 8px;
-  overflow: hidden;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-  padding: 16px;
   display: flex;
-  align-items: center;
-  transition: transform 0.2s ease;
-}
-
-.activity-item:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  gap: 15px;
+  padding: 15px;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
 }
 
 .activity-icon {
   width: 40px;
   height: 40px;
-  background-color: #f0f0f0;
   border-radius: 50%;
   display: flex;
-  justify-content: center;
   align-items: center;
-  margin-right: 16px;
+  justify-content: center;
+  color: white;
   flex-shrink: 0;
 }
 
 .activity-icon.rating {
-  background-color: #FFD700;
-  color: white;
-}
-
-.activity-icon.comment {
-  background-color: #4CAF50;
-  color: white;
-}
-
-.activity-icon.creation {
-  background-color: #2196F3;
-  color: white;
-}
-
-.activity-icon.save {
-  background-color: #9C27B0;
-  color: white;
+  background-color: #FFC107;
 }
 
 .activity-content {
   flex: 1;
-  min-width: 0; 
 }
 
 .activity-header {
   display: flex;
   justify-content: space-between;
-  margin-bottom: 4px;
+  align-items: center;
+  margin-bottom: 8px;
 }
 
 .activity-title {
+  margin: 0;
+  font-size: 16px;
   font-weight: 600;
-  margin: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.activity-date {
-  color: #757575;
-  font-size: 12px;
-  white-space: nowrap;
-}
-
-.activity-text {
-  color: #555;
-  margin: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2;
-  -webkit-box-orient: vertical;
-  max-height: 3em;
 }
 
 .activity-recipe-link {
-  color: #1976d2;
-  text-decoration: none;
-  font-weight: 500;
+  color: #2c3e50;
+  cursor: pointer;
+  transition: color 0.2s;
 }
 
 .activity-recipe-link:hover {
+  color: #3498db;
   text-decoration: underline;
 }
 
+.activity-date {
+  color: #7f8c8d;
+  font-size: 14px;
+}
+
+.activity-rating {
+  margin-top: 10px;
+}
+
+.star-rating {
+  color: #FFC107;
+  font-size: 16px;
+  margin-bottom: 5px;
+}
+
+.review-text {
+  color: #555;
+  font-style: italic;
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.filter-button {
+  padding: 8px 15px;
+  background-color: #f1f1f1;
+  border: none;
+  border-radius: 20px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.filter-button.active {
+  background-color: #4CAF50;
+  color: white;
+}
+
 .activity-filter {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
   margin-bottom: 20px;
 }
 
 .no-activity {
   text-align: center;
-  padding: 40px 0;
-  color: #757575;
-}
-
-@media (max-width: 576px) {
-  .activity-item {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  
-  .activity-icon {
-    margin-right: 0;
-    margin-bottom: 12px;
-  }
-  
-  .activity-header {
-    flex-direction: column;
-  }
-  
-  .activity-date {
-    margin-top: 4px;
-  }
+  padding: 30px;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  color: #666;
 }
 
 .saved-recipes {
@@ -1215,4 +1190,78 @@ button:disabled:hover {
     width: 100%;
     padding: 10px;
   }
+}
+
+/* Star rating display */
+.star-rating-display {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.rating-number {
+  color: #666;
+  font-size: 14px;
+  margin-left: 5px;
+}
+
+/* Updated Activity Styling */
+.activity-detail {
+  margin-top: 10px;
+}
+
+.rating-score {
+  display: flex;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.rating-stars {
+  margin: 0 5px;
+}
+
+.rating-number {
+  color: #666;
+  font-size: 14px;
+}
+
+.review-text {
+  color: #555;
+  font-style: italic;
+  margin: 5px 0 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.explore-btn {
+  background-color: #4CAF50;
+  color: white;
+  border: none;
+  border-radius: 5px;
+  padding: 10px 20px;
+  margin-top: 15px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s;
+}
+
+.explore-btn:hover {
+  background-color: #45a049;
+}
+
+/* Debug button */
+.debug-button {
+  padding: 8px 15px;
+  background-color: #ff9800;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  margin-right: 10px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.debug-button:hover {
+  background-color: #f57c00;
 }

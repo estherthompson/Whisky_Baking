@@ -8,12 +8,10 @@ import {
 
 const router = express.Router();
 
-// Ingredient routes
 router.get('/ingredients', getIngredients);
 router.get('/ingredients/:id', getIngredientById);
 router.post('/ingredients', createIngredient);
 
-// Recipe-Ingredient relationship routes
 router.get('/recipes/:recipeId/ingredients', getRecipeIngredients);
 
 export default router; 

@@ -1,5 +1,5 @@
 import express from 'express';
-import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, debugGetUserRecipes, getSavedRecipes, getUserRatings, uploadRecipeImage, deleteSavedRecipe } from '../controllers/recipeController.js';
+import { createRecipe, getRecipeById, getAllRecipes, savedRecipe, addRatingToRecipe, getSavedRecipes, getUserRatings, uploadRecipeImage, deleteSavedRecipe} from '../controllers/recipeController.js';
 import { createRating } from '../controllers/ratingController.js';
 
 const router = express.Router();
@@ -10,17 +10,14 @@ router.get('/recipes/:id', getRecipeById);
 router.post('/recipes', createRecipe);
 router.post('/recipes/save', savedRecipe);
 
-// Recipe image upload route
 router.post('/recipes/:recipeId/image', uploadRecipeImage);
 
-// User recipes route - for "My Recipes" functionality
 router.get('/user/:userId/recipes', (req, res) => {
   console.log('User recipes route hit with userId:', req.params.userId);
   
-  // Make sure we're using lowercase 'userid' consistently
   req.query = {
     ...req.query,
-    userid: req.params.userId  // Using lowercase 'userid' explicitly
+    userid: req.params.userId  
   };
   
   console.log('Updated query parameters:', JSON.stringify(req.query));
@@ -29,10 +26,9 @@ router.get('/user/:userId/recipes', (req, res) => {
   return getAllRecipes(req, res);
 });
 
-// Saved recipes route - for saved recipes functionality
+
 router.get('/user/:userId/saved-recipes', getSavedRecipes);
 router.delete('/user/:userId/saved-recipes/:recipeId', deleteSavedRecipe);
-// Add a POST route that also handles DELETE via method override
 router.post('/user/:userId/saved-recipes/:recipeId', (req, res) => {
   const methodOverride = req.headers['x-http-method-override'];
   if (methodOverride && methodOverride.toLowerCase() === 'delete') {
@@ -42,13 +38,9 @@ router.post('/user/:userId/saved-recipes/:recipeId', (req, res) => {
   return res.status(405).json({ error: 'Method not allowed. Expected DELETE method override.' });
 });
 
-// User ratings route - for activity page
 router.get('/user/:userId/ratings', getUserRatings);
 
-// Debug route for direct testing
-router.get('/debug/user/:userId/recipes', debugGetUserRecipes);
 
-// Rating routes
 router.post('/recipes/:recipeid/ratings', addRatingToRecipe);
 router.post('/recipes/rating', createRating);
 

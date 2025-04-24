@@ -1,6 +1,5 @@
 import supabase from '../config/supabaseClient.js';
 
-// Get all ratings for a recipe
 export const getRatings = async (req, res) => {
     try {
         const { recipeid } = req.params;
@@ -43,10 +42,8 @@ export const getRatings = async (req, res) => {
     }
 };
 
-// Create a new rating
 export const createRating = async (req, res) => {
     try {
-        // Extract data from request body with frontend format
         const {
             userId,
             recipeId,
@@ -57,12 +54,10 @@ export const createRating = async (req, res) => {
 
         console.log('Received review data:', req.body);
 
-        // Map to database field names
         const recipeid = recipeId;
         const userid = userId;
         const reviewtext = reviewText;
 
-        // Validate required fields
         if (!recipeid || !userid || !score) {
             const missingFields = [];
             if (!recipeid) missingFields.push('recipeId');
@@ -75,14 +70,12 @@ export const createRating = async (req, res) => {
             });
         }
 
-        // Validate score is between 1 and 5
         if (score < 1 || score > 5) {
             return res.status(400).json({
                 error: 'Score must be between 1 and 5'
             });
         }
 
-        // Check if user has already rated this recipe
         const { data: existingRating, error: checkError } = await supabase
             .from('rating')
             .select('ratingid')
@@ -91,7 +84,6 @@ export const createRating = async (req, res) => {
             .single();
 
         if (checkError && checkError.code !== 'PGRST116') {
-            // Error other than "no rows returned"
             console.error('Error checking existing rating:', checkError);
             return res.status(500).json({
                 error: 'Failed to check existing rating',
@@ -105,7 +97,6 @@ export const createRating = async (req, res) => {
             });
         }
 
-        // Get the last rating ID
         const { data: lastRating, error: countError } = await supabase
             .from('rating')
             .select('ratingid')
@@ -119,12 +110,10 @@ export const createRating = async (req, res) => {
 
         const nextRatingId = lastRating ? lastRating.ratingid + 1 : 1;
 
-        // Format date for PostgreSQL
         const formattedDate = datePosted ? 
             new Date(datePosted).toISOString().split('T')[0] : 
             new Date().toISOString().split('T')[0];
 
-        // Insert the new rating
         const { data: rating, error } = await supabase
             .from('rating')
             .insert([
@@ -148,7 +137,6 @@ export const createRating = async (req, res) => {
             });
         }
 
-        // Update recipe average rating
         await updateRecipeAverageRating(recipeid);
 
         res.status(201).json({
@@ -165,10 +153,8 @@ export const createRating = async (req, res) => {
     }
 };
 
-// Helper function to update a recipe's average rating
 async function updateRecipeAverageRating(recipeid) {
     try {
-        // Get all ratings for the recipe
         const { data: ratings, error: ratingsError } = await supabase
             .from('rating')
             .select('score')
@@ -180,14 +166,14 @@ async function updateRecipeAverageRating(recipeid) {
         }
 
         if (!ratings || ratings.length === 0) {
-            return; // No ratings to calculate average
+            return; 
         }
 
-        // Calculate average
+
         const sum = ratings.reduce((total, rating) => total + rating.score, 0);
         const average = sum / ratings.length;
 
-        // Update recipe with new average rating
+
         const { error: updateError } = await supabase
             .from('recipe')
             .update({ average_rating: average.toFixed(1) })
@@ -199,4 +185,5 @@ async function updateRecipeAverageRating(recipeid) {
     } catch (error) {
         console.error('Error in updateRecipeAverageRating:', error);
     }
-} 
+}
+

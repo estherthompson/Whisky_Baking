@@ -14,9 +14,6 @@ import {
   faStar, 
   faClock, 
   faUtensils, 
-  faComment, 
-  faPlus, 
-  faBookmark,
   faHistory,
   faTimes,
   faEye,
@@ -93,28 +90,18 @@ const UserAccount = () => {
       return;
     }
     
+    // Fetch appropriate data based on active tab
     if (activeTab === 'my-recipes') {
       fetchUserRecipes();
-    }
-    
-    if (activeTab === 'activity') {
+    } else if (activeTab === 'activity') {
       fetchUserActivities();
-    }
-    
-    if (activeTab === 'saved') {
-      setSavedRecipes([]);
+    } else if (activeTab === 'saved') {
       setSavedRecipesLoading(true);
-      setTimeout(() => {
-        fetchSavedRecipes();
-      }, 100);
-    }
-  }, [activeTab]);
-
-  useEffect(() => {
-    if (activeTab === 'settings' && user) {
+      fetchSavedRecipes();
+    } else if (activeTab === 'settings') {
       fetchUserProfile();
     }
-  }, [activeTab]);
+  }, [activeTab, user]);
 
   useEffect(() => {
     const handleRecipeSaved = (event) => {
@@ -221,32 +208,70 @@ const UserAccount = () => {
       return;
     }
     
+    console.log('User ID for ratings query:', userId);
     setActivityLoading(true);
     
     try {
-      const response = await axios.get(`http://localhost:5001/api/user/${userId}/ratings`);
+      // First try the debug endpoint to check what's in the database
+      const debugUrl = `http://localhost:5001/api/debug/user/${userId}/ratings`;
+      console.log('Fetching debug ratings info from:', debugUrl);
       
-      const realActivities = response.data.map(rating => ({
-        id: rating.id || rating.rating_id,
-        type: 'rating',
-        recipe: {
-          id: rating.recipe_id || rating.recipeid,
-          name: rating.recipe_name || 'Unknown Recipe'
-        },
-        date: rating.created_at || rating.date || new Date().toISOString(),
-        data: {
-          score: rating.rating || rating.score || 0,
-          review: rating.review || rating.comment || ''
-        }
-      }));
+      try {
+        const debugResponse = await axios.get(debugUrl);
+        console.log('Debug ratings response:', debugResponse.data);
+      } catch (debugError) {
+        console.error('Debug endpoint error (non-fatal):', debugError);
+      }
       
-      setActivities([...realActivities]);
+      // Now fetch the actual user ratings
+      const url = `http://localhost:5001/api/user/${userId}/ratings`;
+      console.log('Fetching user ratings from:', url);
+      
+      const response = await axios.get(url);
+      
+      console.log('User ratings response data:', response.data);
+      
+      if (!Array.isArray(response.data)) {
+        console.error('Expected array response but got:', typeof response.data);
+        setActivities([]);
+        setActivityLoading(false);
+        return;
+      }
+      
+      if (response.data.length === 0) {
+        console.log('No ratings found for this user');
+        setActivities([]);
+        setActivityLoading(false);
+        return;
+      }
+      
+      const ratingsActivities = response.data.map(rating => {
+        console.log('Processing rating:', rating);
+        return {
+          id: rating.id,
+          type: 'rating',
+          recipe: {
+            id: rating.recipe_id,
+            name: rating.recipe_name
+          },
+          date: rating.created_at,
+          data: {
+            score: rating.rating,
+            review: rating.review || ''
+          }
+        };
+      });
+      
+      console.log('Processed activities:', ratingsActivities);
+      
+      setActivities(ratingsActivities);
       setActivityLoading(false);
       
     } catch (error) {
       console.error('Error fetching user ratings:', error);
+      console.error('Error details:', error.response?.data || error.message);
+      console.error('Error status:', error.response?.status);
       setActivityLoading(false);
-      
       setActivities([]);
     }
   };
@@ -631,16 +656,48 @@ const UserAccount = () => {
   const isAdmin = user.isadmin;
 
   const renderStarRating = (rating) => {
-    if (!rating || rating === 'N/A' || rating === 0 || rating === '0') {
-      return <span className="unrated"><FontAwesomeIcon icon={faStar} /> Unrated</span>;
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+    
+    // Add full stars
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(
+        <FontAwesomeIcon 
+          key={`star-${i}`} 
+          icon={faStar} 
+          style={{ color: '#FFC107' }} 
+        />
+      );
     }
     
-    const ratingNum = parseFloat(rating);
+    // Add half star if needed
+    if (hasHalfStar) {
+      stars.push(
+        <FontAwesomeIcon 
+          key="half-star" 
+          icon={faStar} 
+          style={{ color: '#FFC107', opacity: 0.5 }} 
+        />
+      );
+    }
+    
+    // Add empty stars to make 5 stars total
+    const emptyStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    for (let i = 0; i < emptyStars; i++) {
+      stars.push(
+        <FontAwesomeIcon 
+          key={`empty-star-${i}`} 
+          icon={faStar} 
+          style={{ color: '#ccc' }} 
+        />
+      );
+    }
+    
     return (
-      <span className="star-rating">
-        <FontAwesomeIcon icon={faStar} className="star-filled" />
-        <span className="rating-value">{ratingNum.toFixed(1)}</span>
-      </span>
+      <div className="star-rating-display">
+        {stars} <span className="rating-number">({rating}/5)</span>
+      </div>
     );
   };
 
@@ -770,6 +827,7 @@ const UserAccount = () => {
       alert(`Test failed: ${error.response?.data?.error || error.message}`);
     }
   };
+
 
   return (
     <div className="user-account-container">
@@ -1000,14 +1058,9 @@ const UserAccount = () => {
                 onClick={() => setActivityFilter('rating')}
               >
                 Ratings
-          </button>
-          <button 
-                className={`filter-button ${activityFilter === 'viewed' ? 'active' : ''}`}
-                onClick={() => setActivityFilter('viewed')}
-          >
-                Recently Viewed
-          </button>
-        </div>
+              </button>
+              {process.env.NODE_ENV !== 'production'}
+            </div>
             
             {activityLoading ? (
               <div className="loading">Loading your activity...</div>
@@ -1023,34 +1076,47 @@ const UserAccount = () => {
                         <h3 className="activity-title">
                           <span 
                             className="activity-recipe-link" 
-                            onClick={() => handleRecipeClick({ recipeid: activity.recipe?.id || activity.recipe_id })}
+                            onClick={() => handleRecipeClick({ recipeid: activity.recipe?.id })}
                           >
-                            {activity.recipe?.name || activity.recipe_name || 'Unknown Recipe'}
+                            {activity.recipe?.name || 'Unknown Recipe'}
                           </span>
                         </h3>
-                        <span className="activity-date">{formatDate(activity.date || activity.created_at)}</span>
+                        <span className="activity-date">{formatDate(activity.date)}</span>
                       </div>
-                      <p className="activity-text">
-                        {activity.type === 'rating' && 
-                          `You rated ${activity.recipe?.name || activity.recipe_name} ${activity.data?.score || activity.rating} stars${activity.data?.review || activity.review ? `: "${activity.data?.review || activity.review}"` : ''}`
-                        }
-                        {activity.type === 'viewed' &&
-                          `You viewed ${activity.recipe?.name || activity.recipe_name}`
-                        }
-                        {activity.type === 'creation' && 
-                          `You created a new recipe: ${activity.recipe?.name || activity.recipe_name}`
-                        }
-                        {activity.type === 'save' && 
-                          `You saved ${activity.recipe?.name || activity.recipe_name} to your collection`
-                        }
-                      </p>
+                      <div className="activity-detail">
+                        <div className="rating-score">
+                          <span>Your rating: </span>
+                          <span className="rating-stars">
+                            {[1, 2, 3, 4, 5].map((star) => (
+                              <FontAwesomeIcon 
+                                key={star}
+                                icon={faStar} 
+                                style={{ 
+                                  color: star <= activity.data.score ? '#FFC107' : '#e0e0e0',
+                                  marginRight: '2px'
+                                }} 
+                              />
+                            ))}
+                          </span>
+                          <span className="rating-number">({activity.data.score}/5)</span>
+                        </div>
+                        {activity.data.review && (
+                          <p className="review-text">"{activity.data.review}"</p>
+                        )}
+                      </div>
                     </div>
                   </div>
                 ))}
               </div>
             ) : (
               <div className="no-activity">
-                <p>No activity found. Start interacting with recipes to see your activity here!</p>
+                <p>No ratings found. Rate some recipes to see your activity here!</p>
+                <button 
+                  className="explore-btn"
+                  onClick={() => navigate('/')}
+                >
+                  Explore Recipes to Rate
+                </button>
               </div>
             )}
           </div>
