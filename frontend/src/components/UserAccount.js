@@ -18,7 +18,9 @@ import {
   faPlus, 
   faBookmark,
   faHistory,
-  faTimes
+  faTimes,
+  faEye,
+  faEyeSlash
 } from '@fortawesome/free-solid-svg-icons';
 import RecipeModal from './RecipeModal';
 
@@ -62,6 +64,18 @@ const UserAccount = () => {
   const [formSubmitting, setFormSubmitting] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
   const [formError, setFormError] = useState('');
+  const [showPasswordModal, setShowPasswordModal] = useState(false);
+  const [passwordData, setPasswordData] = useState({
+    currentPassword: '',
+    newPassword: '',
+    confirmPassword: ''
+  });
+  const [passwordError, setPasswordError] = useState('');
+  const [passwordSuccess, setPasswordSuccess] = useState('');
+  const [submittingPassword, setSubmittingPassword] = useState(false);
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
+  const [showNewPassword, setShowNewPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   useEffect(() => {
     if (!user) {
@@ -578,6 +592,42 @@ const UserAccount = () => {
     navigate('/login');
   };
 
+  const handleDeleteAccount = async () => {
+    if (!user) return;
+    
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      console.error("Cannot find user ID in user object", user);
+      alert('User ID not found. Please try logging out and back in.');
+      return;
+    }
+    
+    // Show confirmation dialog
+    const confirmDelete = window.confirm(
+      'Are you sure you want to delete your account? This action cannot be undone and will delete all your recipes, saved recipes, and profile information.'
+    );
+    
+    if (!confirmDelete) return;
+    
+    try {
+      // Delete user account
+      const response = await axios.delete(`http://localhost:5001/api/auth/user/${userId}`);
+      
+      // On successful deletion
+      alert('Your account has been successfully deleted.');
+      
+      // Clear user data from local storage
+      localStorage.removeItem('user');
+      localStorage.removeItem('token');
+      
+      // Redirect to home page
+      navigate('/');
+    } catch (error) {
+      console.error('Error deleting account:', error);
+      alert(`Failed to delete account: ${error.response?.data?.error || 'Unknown error occurred'}. Please try again.`);
+    }
+  };
+
   const isAdmin = user.isadmin;
 
   const renderStarRating = (rating) => {
@@ -592,6 +642,133 @@ const UserAccount = () => {
         <span className="rating-value">{ratingNum.toFixed(1)}</span>
       </span>
     );
+  };
+
+  const handlePasswordChange = (e) => {
+    setPasswordData({
+      ...passwordData,
+      [e.target.name]: e.target.value
+    });
+  };
+
+  const handlePasswordSubmit = async (e) => {
+    e.preventDefault();
+    
+    if (!user) return;
+    
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      setPasswordError('User ID not found');
+      return;
+    }
+    
+    console.log('Starting password change process for user ID:', userId);
+    console.log('Password data:', {
+      currentPasswordLength: passwordData.currentPassword.length,
+      newPasswordLength: passwordData.newPassword.length,
+      confirmPasswordLength: passwordData.confirmPassword.length
+    });
+    
+    // Validate inputs
+    if (!passwordData.currentPassword || !passwordData.newPassword || !passwordData.confirmPassword) {
+      setPasswordError('All fields are required');
+      return;
+    }
+    
+    if (passwordData.newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long');
+      return;
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      setPasswordError('New passwords do not match');
+      return;
+    }
+    
+    setSubmittingPassword(true);
+    setPasswordError('');
+    
+    try {
+      console.log('Sending password change request to:', `http://localhost:5001/api/auth/user/${userId}/password`);
+      
+      const payload = {
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      };
+      
+      console.log('Request payload:', payload);
+      
+      const response = await axios.put(`http://localhost:5001/api/auth/user/${userId}/password`, payload);
+      
+      console.log('Password change response:', response.data);
+      
+      setPasswordSuccess('Password changed successfully');
+      
+      // Reset form
+      setPasswordData({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: ''
+      });
+      
+      // Close the modal after a delay
+      setTimeout(() => {
+        setShowPasswordModal(false);
+        setPasswordSuccess('');
+      }, 2000);
+    } catch (error) {
+      console.error('Error changing password:', error);
+      console.error('Error response data:', error.response?.data);
+      console.error('Error status:', error.response?.status);
+      setPasswordError(error.response?.data?.error || 'Error changing password');
+    } finally {
+      setSubmittingPassword(false);
+    }
+  };
+
+  const openPasswordModal = () => {
+    setShowPasswordModal(true);
+    setPasswordData({
+      currentPassword: '',
+      newPassword: '',
+      confirmPassword: ''
+    });
+    setPasswordError('');
+    setPasswordSuccess('');
+  };
+
+  // Test functions for debugging
+  const runPasswordTest = async () => {
+    if (!user) return;
+    
+    const userId = user.UserID || user.userid || user.userId || user.id;
+    if (!userId) {
+      console.error("Cannot find user ID in user object", user);
+      alert('User ID not found. Please try logging out and back in.');
+      return;
+    }
+    
+    try {
+      // First, test the database debug endpoint
+      console.log('Testing database connection...');
+      const debugResponse = await axios.get('http://localhost:5001/api/auth/debug/user-account');
+      console.log('Debug response:', debugResponse.data);
+      
+      // Then test direct password update
+      console.log('Testing direct password update...');
+      const testPassword = 'test123';
+      const testResponse = await axios.post('http://localhost:5001/api/auth/test/password-update', {
+        userId: userId,
+        newPassword: testPassword
+      });
+      
+      console.log('Test password update response:', testResponse.data);
+      alert(`Test completed! Check console for details. Password temporarily set to: ${testPassword}`);
+    } catch (error) {
+      console.error('Error during test:', error);
+      console.error('Error response:', error.response?.data);
+      alert(`Test failed: ${error.response?.data?.error || error.message}`);
+    }
   };
 
   return (
@@ -949,8 +1126,18 @@ const UserAccount = () => {
               <div className="settings-section">
                 <h3>Account Management</h3>
                 <div className="account-actions">
-                  <button className="action-btn change-password-btn">Change Password</button>
-                  <button className="action-btn delete-account-btn">Delete Account</button>
+                  <button 
+                    className="action-btn change-password-btn"
+                    onClick={openPasswordModal}
+                  >
+                    Change Password
+                  </button>
+                  <button 
+                    className="action-btn delete-account-btn"
+                    onClick={handleDeleteAccount}
+                  >
+                    Delete Account
+                  </button>
                 </div>
               </div>
             </div>
@@ -960,6 +1147,120 @@ const UserAccount = () => {
           </div>
         )}
       </div>
+
+      {/* Password change modal */}
+      {showPasswordModal && (
+        <div className="modal-backdrop">
+          <div className="modal-content password-modal">
+            <h2>Change Password</h2>
+            <form onSubmit={handlePasswordSubmit}>
+              <div className="password-field">
+                <label htmlFor="currentPassword">Current Password</label>
+                <div className="password-input-container">
+                  <input 
+                    type={showCurrentPassword ? "text" : "password"} 
+                    id="currentPassword" 
+                    name="currentPassword"
+                    value={passwordData.currentPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter your current password"
+                  />
+                  <button 
+                    type="button" 
+                    className="toggle-password"
+                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                  >
+                    <FontAwesomeIcon icon={showCurrentPassword ? faEyeSlash : faEye} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="password-field">
+                <label htmlFor="newPassword">New Password</label>
+                <div className="password-input-container">
+                  <input 
+                    type={showNewPassword ? "text" : "password"} 
+                    id="newPassword" 
+                    name="newPassword"
+                    value={passwordData.newPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Enter your new password"
+                  />
+                  <button 
+                    type="button" 
+                    className="toggle-password"
+                    onClick={() => setShowNewPassword(!showNewPassword)}
+                  >
+                    <FontAwesomeIcon icon={showNewPassword ? faEyeSlash : faEye} />
+                  </button>
+                </div>
+              </div>
+              
+              <div className="password-field">
+                <label htmlFor="confirmPassword">Confirm New Password</label>
+                <div className="password-input-container">
+                  <input 
+                    type={showConfirmPassword ? "text" : "password"} 
+                    id="confirmPassword" 
+                    name="confirmPassword"
+                    value={passwordData.confirmPassword}
+                    onChange={handlePasswordChange}
+                    placeholder="Confirm your new password"
+                  />
+                  <button 
+                    type="button" 
+                    className="toggle-password"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  >
+                    <FontAwesomeIcon icon={showConfirmPassword ? faEyeSlash : faEye} />
+                  </button>
+                </div>
+              </div>
+              
+              {passwordError && <div className="error-message">{passwordError}</div>}
+              {passwordSuccess && <div className="success-message">{passwordSuccess}</div>}
+              
+              <div className="modal-actions">
+                <button 
+                  type="button" 
+                  className="cancel-btn"
+                  onClick={() => setShowPasswordModal(false)}
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  className="save-btn"
+                  disabled={submittingPassword}
+                >
+                  {submittingPassword ? 'Changing...' : 'Change Password'}
+                </button>
+              </div>
+              
+              {process.env.NODE_ENV !== 'production' && (
+                <div style={{ marginTop: '20px', borderTop: '1px dashed #ccc', paddingTop: '15px' }}>
+                  <p style={{ fontSize: '14px', color: '#888', marginBottom: '10px' }}>Debug Tools:</p>
+                  <button 
+                    type="button"
+                    onClick={runPasswordTest}
+                    style={{
+                      backgroundColor: '#ff9800',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '4px',
+                      padding: '8px 15px',
+                      fontSize: '14px',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Test Password Update
+                  </button>
+                </div>
+              )}
+            </form>
+          </div>
+        </div>
+      )}
 
       {selectedRecipe && (
         <RecipeModal
