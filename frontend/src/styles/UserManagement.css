@@ -1,0 +1,728 @@
+.user-management {
+  padding: 2rem;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  width: 100%;
+  overflow: hidden;
+  padding: 20px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.back-button {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: #f8f9fa;
+  border: 1px solid #dee2e6;
+  border-radius: 4px;
+  color: #495057;
+  font-size: 0.875rem;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.back-button:hover {
+  background: #e9ecef;
+  border-color: #ced4da;
+}
+
+.header h2 {
+  margin: 0;
+  color: #2c3e50;
+}
+
+.users-table {
+  width: 100%;
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+th, td {
+  padding: 1rem;
+  text-align: left;
+  border-bottom: 1px solid #eee;
+}
+
+th {
+  background-color: #f8f9fa;
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+tr:hover {
+  background-color: #f8f9fa;
+}
+
+.user-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #2c3e50;
+}
+
+.user-email {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.status-badge {
+  padding: 0.25rem 0.75rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-badge.approved {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
+.status-badge.pending {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-width: 100px;
+}
+
+.approve-btn {
+  background: #198754;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+}
+
+.approve-btn:hover {
+  background: #157347;
+}
+
+.reject-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 500;
+  width: 100%;
+}
+
+.reject-btn:hover {
+  background: #bb2d3b;
+}
+
+.users-list {
+  display: none;
+}
+
+.user-card {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 8px;
+  margin-bottom: 1rem;
+  overflow: hidden;
+}
+
+.user-header {
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: #f8f9fa;
+}
+
+.user-details {
+  padding: 1rem;
+  border-top: 1px solid #eee;
+}
+
+.user-actions {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+@media (max-width: 768px) {
+  .desktop-view {
+    display: none;
+  }
+  
+  .mobile-view {
+    display: block;
+  }
+  
+  .user-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+  
+  .user-status {
+    width: 100%;
+    justify-content: flex-start;
+  }
+  
+  .user-actions {
+    flex-direction: column;
+  }
+  
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+  
+  .approve-btn, .reject-btn {
+    width: 100%;
+  }
+}
+
+.stats-section {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 15px;
+  flex-wrap: wrap;
+}
+
+.stat-card {
+  flex: 1;
+  min-width: 120px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 10px;
+  text-align: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.stat-card h3 {
+  margin: 0;
+  color: #6c757d;
+  font-size: 10px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.stat-number {
+  margin: 5px 0 0;
+  font-size: 18px;
+  font-weight: 600;
+  color: #212529;
+}
+
+.users-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.users-table th {
+  text-align: left;
+  padding: 12px;
+  background: #f8f9fa;
+  font-weight: 600;
+  color: #495057;
+}
+
+.users-table td {
+  padding: 12px;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: top;
+}
+
+.user-info {
+  min-width: 200px;
+}
+
+.user-name {
+  font-weight: 600;
+  color: #212529;
+}
+
+.user-email {
+  font-size: 14px;
+  color: #6c757d;
+}
+
+.user-bio {
+  max-width: 300px;
+  color: #495057;
+  line-height: 1.5;
+}
+
+.user-links {
+  max-width: 250px;
+}
+
+.user-links ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user-links li {
+  margin-bottom: 4px;
+}
+
+.user-links a {
+  color: #0d6efd;
+  text-decoration: none;
+  font-size: 14px;
+  word-break: break-all;
+}
+
+.user-links a:hover {
+  text-decoration: underline;
+}
+
+.no-links {
+  color: #6c757d;
+  font-style: italic;
+  font-size: 14px;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.status-badge.approved {
+  background: #d1e7dd;
+  color: #0f5132;
+}
+
+.status-badge.pending {
+  background: #fff3cd;
+  color: #856404;
+}
+
+.mobile-view {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .desktop-view {
+    display: none;
+  }
+
+  .mobile-view {
+    display: block;
+  }
+
+  .user-card {
+    background: white;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    margin-bottom: 16px;
+    overflow: hidden;
+  }
+
+  .user-header {
+    padding: 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  .user-details {
+    padding: 16px;
+    background: #f8f9fa;
+    border-top: 1px solid #e9ecef;
+  }
+
+  .user-username {
+    color: #6c757d;
+    font-size: 14px;
+    margin-bottom: 8px;
+  }
+
+  .user-bio {
+    margin: 8px 0;
+    color: #495057;
+    line-height: 1.5;
+  }
+
+  .user-links {
+    margin: 8px 0;
+  }
+
+  .user-links ul {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .user-links li {
+    margin-bottom: 4px;
+  }
+
+  .user-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 16px;
+  }
+
+  .approve-btn,
+  .reject-btn {
+    width: 100%;
+  }
+}
+
+.users-dropdown-toggle {
+  background: #f8f9fa;
+  border-radius: 4px;
+  padding: 10px 15px;
+  margin-bottom: 15px;
+  margin-top: 15px;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+  transition: background-color 0.2s;
+}
+
+.users-dropdown-toggle:hover {
+  background: #e9ecef;
+}
+
+.users-dropdown-toggle h3 {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 500;
+  color: #495057;
+}
+
+.users-card-container {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 15px;
+}
+
+.user-card {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  overflow: hidden;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.user-header {
+  padding: 10px 15px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  background: #f8f9fa;
+  transition: background-color 0.2s;
+}
+
+.user-header:hover {
+  background: #e9ecef;
+}
+
+.user-details {
+  padding: 15px;
+  border-top: 1px solid #eee;
+}
+
+.user-email {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+.user-username {
+  color: #6c757d;
+  font-size: 14px;
+  margin-bottom: 8px;
+}
+
+.user-bio {
+  margin-bottom: 10px;
+  color: #495057;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.user-links {
+  margin-bottom: 10px;
+}
+
+.user-links ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.user-links li {
+  margin-bottom: 4px;
+}
+
+.user-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.approve-btn,
+.reject-btn {
+  width: 100%;
+}
+
+.desktop-view, .mobile-view {
+  display: block;
+}
+
+@media (max-width: 768px) {
+  .stats-section {
+    flex-direction: row;
+    flex-wrap: wrap;
+  }
+  
+  .stat-card {
+    min-width: 80px;
+  }
+}
+
+.recipe-author {
+  font-size: 14px;
+  color: #6c757d;
+  margin-bottom: 8px;
+  font-style: italic;
+}
+
+.recipe-description {
+  margin-bottom: 12px;
+  color: #495057;
+  line-height: 1.5;
+  font-size: 14px;
+}
+
+.recipe-ingredients h4 {
+  margin-top: 0;
+  margin-bottom: 8px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.recipe-ingredients ul {
+  margin: 0 0 15px 0;
+  padding-left: 20px;
+  font-size: 14px;
+  color: #495057;
+}
+
+.recipe-ingredients li {
+  margin-bottom: 3px;
+}
+
+.users-dropdown-toggle.first-dropdown {
+  margin-top: 0;
+}
+
+.debug-section {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #f5f5f5;
+  border-radius: 8px;
+}
+
+.debug-btn {
+  background-color: #2c3e50;
+  color: white;
+  padding: 0.5rem 1rem;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-right: 0.5rem;
+}
+
+.debug-info {
+  margin-top: 1rem;
+  padding: 1rem;
+  background-color: white;
+  border-radius: 4px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.debug-info pre {
+  background-color: #f0f0f0;
+  padding: 0.5rem;
+  border-radius: 4px;
+  font-family: monospace;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.recipe-content {
+  margin-bottom: 1.5rem;
+  width: 100%;
+}
+
+.recipe-image {
+  margin-bottom: 1rem;
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.no-image {
+  background-color: #f5f5f5;
+  height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #777;
+  font-style: italic;
+}
+
+.recipe-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background-color: #f9f9f9;
+  border-radius: 8px;
+}
+
+.recipe-info-item {
+  padding: 0.5rem;
+}
+
+.recipe-section-title {
+  margin: 1.5rem 0 0.5rem 0;
+  font-size: 1.2rem;
+  color: #2c3e50;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.5rem;
+}
+
+.recipe-description {
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.ingredients-list, .instructions-list {
+  padding-left: 1.5rem;
+  margin-top: 0.5rem;
+}
+
+.ingredients-list li, .instructions-list li {
+  margin-bottom: 0.5rem;
+  line-height: 1.5;
+}
+
+.instructions-list li {
+  padding-left: 0.5rem;
+}
+
+.recipe-notes {
+  font-style: italic;
+  color: #666;
+  margin-top: 0.5rem;
+}
+
+.refresh-btn {
+  margin-top: 1rem;
+  background-color: #3498db;
+  color: white;
+  border: none;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.refresh-btn:hover {
+  background-color: #2980b9;
+}
+
+.no-pending {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: #f8f9fa;
+  border: 1px dashed #ced4da;
+  border-radius: 10px;
+  padding: 40px 20px;
+  margin: 20px auto;
+  text-align: center;
+  width: 100%;
+  max-width: 500px;
+}
+
+.no-pending p:first-child {
+  font-size: 1.2rem;
+  color: #495057;
+  font-weight: 500;
+  margin-bottom: 10px;
+}
+
+.no-pending p:nth-child(2) {
+  color: #6c757d;
+  margin-bottom: 25px;
+}
+
+.refresh-btn {
+  background-color: #3498db;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.refresh-btn:hover {
+  background-color: #2980b9;
+}
+
+.check-icon {
+  color: #28a745;
+  margin-bottom: 20px;
+  opacity: 0.8;
+}
+
+.refresh-icon {
+  margin-right: 8px;
+} 

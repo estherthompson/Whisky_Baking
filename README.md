@@ -1,86 +1,89 @@
-# Whisky Baking Project
+**Whisk-Y Baking Application Setup Guide**
 
-## Overview
-This project consists of a **backend** (Node.js with Express and Supabase) and a **frontend** (React.js) for managing student data. Follow the instructions below to set up and run the project locally.
+---
+
+## Introduction
+Welcome to the Whisk-Y Baking web application! This guide will walk you through how to set up and run the project locally on your computer. You have two options:
+1. Clone the repository from GitHub
+2. Use a compressed ZIP file version of the project
 
 ---
 
 ## Prerequisites
-Ensure you have the following installed:
-- **Node.js** (v18 or later recommended)
-- **npm** (comes with Node.js)
-- **Git**
+Before you begin, ensure you have the following installed:
+- [Node.js and npm](https://nodejs.org/)
+- [Git](https://git-scm.com/)
+- A code editor like [VS Code](https://code.visualstudio.com/)
 
 ---
 
-## Setup Instructions
+## Option 1: Clone the Repository
 
-### 1️⃣ Clone the Repository
-```sh
-git clone <repository-url>
-cd whisky_baking
+### Step 1: Clone the Repository
+Open your terminal and run the following command:
+```bash
+git clone https://github.com/estherthompson/Whisky_Baking.git
 ```
 
-### 2️⃣ Setup Backend
-```sh
+### Step 2: Navigate to the Project Folder
+```bash
+cd Whisky_Baking
+```
+
+### Step 3: Switch to the Main Branch (if necessary)
+```bash
+git checkout main
+```
+
+### Step 4: Start the Backend
+```bash
 cd backend
 npm install
-```
-
-#### Environment Variables
-The `.env` file is already included, so no setup is required.
-However, if needed, ensure the `.env` file in `backend/` contains:
-```sh
-SUPABASE_URL=https://cneqjtwaymrarhpaxvht.supabase.co
-SUPABASE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-PORT=5001  # Or any preferred port
-```
-
-#### Start the Backend Server
-```sh
 npm start
 ```
-Your backend should now be running on `http://localhost:5001`
+Wait for the message:
+```bash
+Server running on port 5001
+```
 
----
-
-### 3️⃣ Setup Frontend
-```sh
-cd ../frontend
+### Step 5: Start the Frontend
+Open a new terminal window or tab, then run:
+```bash
+cd frontend
 npm install
-```
-
-#### Start the Frontend
-```sh
 npm start
 ```
-The React app should now be running on `http://localhost:3000`
 
 ---
 
-## API Endpoints
-The backend exposes the following API endpoint:
-- `GET /api/students` → Fetch all students from the Supabase database
+## Option 2: Run from a Compressed File
+
+### Step 1: Extract the ZIP File
+Unzip the `Whisky_Baking.zip` file you downloaded.
+
+### Step 2: Open the Project in VS Code
+Navigate to the unzipped folder and open it in VS Code.
+
+### Step 3: Follow the Same Steps as in Option 1
+Begin from Step 3: Switch to the Main Branch and continue with backend and frontend setup.
 
 ---
 
-## Troubleshooting
-- **Port Already in Use**: If you get an `EADDRINUSE` error, kill the process using that port:
-  ```sh
-  lsof -i :5001  # Find the process ID
-  kill -9 <PID>  # Replace <PID> with the actual process ID
-  ```
-- **CORS Issues**: If frontend requests to the backend are blocked, ensure `cors` middleware is configured in `backend/index.js`:
-  ```js
-  import cors from 'cors';
-  app.use(cors());
-  ```
+## Features of the Website
+Once the frontend and backend are running, the website will automatically open in your browser. Here’s what you can do:
+
+- Search for baking recipes by keyword or category
+- Filter recipes based on ingredients in your pantry
+- View recipe ratings and read reviews
+- Write your own reviews after logging in
+- Create a user account using the "User" icon on the top right
+- Upload your own recipes using the "Upload Recipe" section
 
 ---
 
-## Contributors
-- Esther Thompson (@estherthompson)
-- [Add other group members here]
+## Need Help?
+If you run into any issues, feel free to open an issue on the GitHub repository or reach out to the project maintainer.
 
-Happy coding! 🎉
+Happy Baking!
+
 

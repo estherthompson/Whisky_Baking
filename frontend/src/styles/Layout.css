@@ -6,15 +6,26 @@
 
 .main-content {
   flex: 1;
-  padding: 2rem 0;
+  margin-top: calc(56px + 15px); 
+  padding: 20px;
+  overflow-y: auto;
+  max-width: 1800px;
+  margin-left: auto;
+  margin-right: auto;
+  width: 100%;
+  background-color: transparent;
+}
+
+.home-page .main-content {
+  margin-top: 0;
+  padding: 0;
+  background-color: #f8f9fa;
 }
 
 .footer {
-  background-color: var(--primary-color);
-  color: var(--light-text);
-  padding: 1rem 0;
+  background-color: #f8f9fa;
+  padding: 20px;
   text-align: center;
-  margin-top: auto;
 }
 
 .footer p {
@@ -24,6 +35,12 @@
 
 @media (max-width: 768px) {
   .main-content {
-    padding: 1rem 0;
+    margin-top: calc(56px + 15px);
+    padding: 15px;
+  }
+
+  .home-page .main-content {
+    margin-top: 0;
+    padding: 0;
   }
 } 
