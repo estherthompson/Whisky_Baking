@@ -85,9 +85,18 @@ const Login = () => {
           password: formData.password
         });
         
+        // Ensure the response data has a consistent userid field
+        const userData = response.data;
+        console.log('Login response data:', userData);
+        
+        if (!userData.userid) {
+          console.warn('User data missing userid field, attempting to standardize');
+          userData.userid = userData.UserID || userData.userId || userData.id || userData.user_id;
+        }
+        
         // Store user data in localStorage
-        localStorage.setItem('user', JSON.stringify(response.data));
-        console.log('Login successful, user stored in localStorage');
+        localStorage.setItem('user', JSON.stringify(userData));
+        console.log('Login successful, user stored in localStorage with ID:', userData.userid);
         
         // Check for draft review
         const draftReviewString = localStorage.getItem('draftReview');
@@ -121,23 +130,34 @@ const Login = () => {
           password: '***'
         });
         
-        await axios.post('http://localhost:5001/api/auth/signup', signupData);
-        setVerificationSent(true);
-        setFormData({
-          identifier: '',
-          password: '',
-          name: '',
-          email: '',
-          username: ''
-        });
+        const response = await axios.post('http://localhost:5001/api/auth/signup', signupData);
+        
+        // Store user data and log in automatically
+        const userData = response.data;
+        console.log('Signup response data:', userData);
+        
+        if (!userData.userid) {
+          console.warn('User data missing userid field, attempting to standardize');
+          userData.userid = userData.UserID || userData.userId || userData.id || userData.user_id;
+        }
+        
+        // Store user data in localStorage
+        localStorage.setItem('user', JSON.stringify(userData));
+        console.log('Signup successful, user stored in localStorage with ID:', userData.userid);
+        
+        // Navigate to user account page
+        navigate('/user-account');
       }
     } catch (err) {
       console.error('Error details:', err.response?.data || err);
       const errorMessage = err.response?.data?.error || 
                           err.response?.data?.details?.message || 
                           err.message || 
-                          'An error occurred during signup';
+                          'An error occurred during authentication';
       setError(errorMessage);
+      
+      // Reset verification state if there was an error
+      setVerificationSent(false);
     }
   };
 

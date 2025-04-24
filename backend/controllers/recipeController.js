@@ -350,9 +350,15 @@ export const getRecipeById = async (req, res) => {
 export const getAllRecipes = async (req, res) => {
     try {
         console.log('Fetching recipes with filters:', req.query);
-        const { search, dietary, userid } = req.query;
+        console.log('Raw query object:', JSON.stringify(req.query));
         
-        console.log('Processing userid filter:', userid);
+        // Explicitly extract the userid in lowercase
+        const userid = req.query.userid;
+        const search = req.query.search;
+        const dietary = req.query.dietary;
+        
+        console.log('Processing userid filter (lowercase):', userid);
+        console.log('Alternative check - userId (uppercase):', req.query.userId);
         
         // Start building the query
         let query = supabase

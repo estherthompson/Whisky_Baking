@@ -16,8 +16,16 @@ router.post('/recipes/:recipeId/image', uploadRecipeImage);
 // User recipes route - for "My Recipes" functionality
 router.get('/user/:userId/recipes', (req, res) => {
   console.log('User recipes route hit with userId:', req.params.userId);
-  req.query.userId = req.params.userId;
-  console.log('Set query parameter:', req.query);
+  
+  // Make sure we're using lowercase 'userid' consistently
+  req.query = {
+    ...req.query,
+    userid: req.params.userId  // Using lowercase 'userid' explicitly
+  };
+  
+  console.log('Updated query parameters:', JSON.stringify(req.query));
+  console.log('Confirming userid is set correctly:', req.query.userid);
+  
   return getAllRecipes(req, res);
 });
 
