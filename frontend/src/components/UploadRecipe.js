@@ -8,7 +8,7 @@ const UploadRecipe = () => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    instructions: [''], // Initialize with one empty step
+    instructions: [''], 
     recipeTime: '',
     ingredients: [{ 
       ingredientId: '', 
@@ -17,7 +17,7 @@ const UploadRecipe = () => {
       measurement: '', 
       name: '' 
     }],
-    image: null // Add image to formData
+    image: null 
   });
   const [imagePreview, setImagePreview] = useState(null);
   const [imageUploading, setImageUploading] = useState(false);
@@ -33,7 +33,6 @@ const UploadRecipe = () => {
   const fractions = ['1/4', '1/3', '1/2', '2/3', '3/4'];
 
   const measurements = [
-    // Volume measurements
     'cup', 'cups',
     'tbsp',
     'tsp',
@@ -41,13 +40,11 @@ const UploadRecipe = () => {
     'L',
     'fl oz',
     
-    // Weight measurements
     'g',
     'kg',
     'oz',
     'lb',
     
-    // Package measurements
     'can',
     'bottle',
     'pack',
@@ -55,12 +52,10 @@ const UploadRecipe = () => {
     'jar',
     'stick',
     
-    // Small measurements
     'pinch',
     'dash',
     'drop',
     
-    // Count measurements
     'piece',
     'slice',
     'whole',
@@ -70,13 +65,11 @@ const UploadRecipe = () => {
   ];
 
   useEffect(() => {
-    // Check if user is logged in
     const user = localStorage.getItem('user');
     if (!user) {
       navigate('/login');
     }
 
-    // Fetch available ingredients
     const fetchIngredients = async () => {
       try {
         const response = await axios.get('http://localhost:5001/api/ingredients');
@@ -89,7 +82,6 @@ const UploadRecipe = () => {
 
     fetchIngredients();
 
-    // Add click outside listener
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setShowDropdown(false);
@@ -105,7 +97,6 @@ const UploadRecipe = () => {
     if (type === 'file') {
       const file = files[0];
       if (file) {
-        // Show image preview
         const reader = new FileReader();
         reader.onloadend = () => {
           setImagePreview(reader.result);
@@ -114,13 +105,11 @@ const UploadRecipe = () => {
         
         setFormData({
           ...formData,
-          image: file // Store the file object
+          image: file 
         });
       }
     } else if (name === 'wholeNumber') {
-      // Allow only numbers and one decimal point
       const numericValue = value.replace(/[^0-9.]/g, '');
-      // Ensure only one decimal point
       const parts = numericValue.split('.');
       const sanitizedValue = parts.length > 2 ? parts[0] + '.' + parts.slice(1).join('') : numericValue;
       
@@ -164,24 +153,22 @@ const UploadRecipe = () => {
     });
     setShowDropdown(false);
     
-    // Update search terms
+  
     const newSearchTerms = [...searchTerms];
     newSearchTerms[index] = ingredient.name;
     setSearchTerms(newSearchTerms);
   };
 
   const handleIngredientSearch = (value, index) => {
-    // Update search terms
     const newSearchTerms = [...searchTerms];
     newSearchTerms[index] = value;
     setSearchTerms(newSearchTerms);
 
-    // Update ingredient name directly
     const newIngredients = [...formData.ingredients];
     newIngredients[index] = {
       ...newIngredients[index],
       name: value,
-      ingredientId: '' // Clear ID when manually typing
+      ingredientId: '' 
     };
     setFormData({
       ...formData,
@@ -193,7 +180,6 @@ const UploadRecipe = () => {
   };
 
   const addIngredient = () => {
-    // Check if the last ingredient has required fields filled
     const lastIngredient = formData.ingredients[formData.ingredients.length - 1];
     if (!lastIngredient.name || !lastIngredient.measurement || 
         (!lastIngredient.wholeNumber && !lastIngredient.fraction)) {
@@ -220,7 +206,6 @@ const UploadRecipe = () => {
   };
 
   const addInstruction = () => {
-    // Check if the last instruction is not empty
     if (formData.instructions[formData.instructions.length - 1].trim() === '') {
       setError('Please fill out the current instruction step before adding a new one.');
       return;
@@ -256,7 +241,6 @@ const UploadRecipe = () => {
     setError('');
     setSuccess('');
 
-    // Validate that each ingredient has at least a whole number or fraction
     const invalidIngredients = formData.ingredients.filter(
       ing => !ing.wholeNumber && !ing.fraction
     );
@@ -267,7 +251,6 @@ const UploadRecipe = () => {
     }
 
     try {
-      // Get user from localStorage
       const user = JSON.parse(localStorage.getItem('user'));
       if (!user) {
         setError('You must be logged in to upload a recipe');
@@ -275,7 +258,6 @@ const UploadRecipe = () => {
         return;
       }
       
-      // Get userId from different possible property names like in UserAccount.js
       const userid = user.UserID || user.userid || user.userId || user.id;
       if (!userid) {
         console.error("Cannot find user ID in user object:", user);
@@ -285,75 +267,62 @@ const UploadRecipe = () => {
       
       console.log("Using user ID for recipe creation:", userid);
       
-      // Format instructions as a single string with numbered steps
       const formattedInstructions = formData.instructions
         .map((instruction, index) => `${index + 1}. ${instruction}`)
         .join('\n\n');
       
-      // Convert recipeTime to a number
       const recipeTimeValue = parseInt(formData.recipeTime, 10);
       
-      // Format ingredient data
       const formattedIngredients = formData.ingredients.map(ing => ({
         ingredientId: ing.ingredientId, 
         name: ing.name,
         quantity: `${ing.wholeNumber || ''}${ing.fraction ? ' ' + ing.fraction : ''}${ing.measurement ? ' ' + ing.measurement : ''}`.trim()
       }));
       
-      // Format the recipe data
       const recipeData = {
         name: formData.name,
         description: formData.description,
         instructions: formattedInstructions,
         recipeTime: recipeTimeValue,
-        userid: userid, // Use the correctly found userid
+        userid: userid, 
         ingredients: formattedIngredients
       };
 
       console.log('Submitting recipe data:', recipeData);
       console.log('Has image to upload:', !!formData.image);
       
-      // First create the recipe
       console.log('Step 1: Creating recipe...');
       const response = await axios.post('http://localhost:5001/api/recipes', recipeData);
       console.log('Recipe creation API response:', response.data);
       
-      // Check that we got a recipe ID back
       if (!response.data || !response.data.recipeid) {
         console.error('Recipe created but no recipe ID returned:', response.data);
         setError('Recipe was created but could not upload image: No recipe ID returned');
         return;
       }
       
-      // Get the recipe ID from the response
       const createdRecipeId = response.data.recipeid;
       console.log('Extracted recipe ID from response:', createdRecipeId);
       setRecipeId(createdRecipeId);
       
-      // If there's an image to upload, do it now
       let imageUrl = null;
       let imageSuccess = false;
       if (formData.image && createdRecipeId) {
         console.log('Step 2: Uploading image for recipe ID:', createdRecipeId);
         setImageUploading(true);
         try {
-          // Use FileReader to convert the image to base64
           const fileReader = new FileReader();
           
-          // Create a promise to handle the asynchronous FileReader
           const readFilePromise = new Promise((resolve, reject) => {
             fileReader.onload = () => resolve(fileReader.result);
             fileReader.onerror = (error) => reject(error);
           });
           
-          // Start reading the file
           fileReader.readAsDataURL(formData.image);
           
-          // Wait for the file to be read
           const base64Data = await readFilePromise;
           console.log('Image converted to base64, length:', base64Data.length);
           
-          // Upload the image
           const imageResponse = await axios.post(
             `http://localhost:5001/api/recipes/${createdRecipeId}/image`, 
             { file: base64Data }
@@ -361,7 +330,6 @@ const UploadRecipe = () => {
           
           console.log('Image upload response:', imageResponse.data);
           
-          // Check for image URL in different formats (imageUrl or imageurl)
           if (imageResponse.data) {
             if (imageResponse.data.imageUrl) {
               imageUrl = imageResponse.data.imageUrl;
@@ -391,7 +359,6 @@ const UploadRecipe = () => {
         });
       }
 
-      // Update success message to include approval info
       if (imageSuccess) {
         setSuccess('Recipe and image uploaded successfully! Your recipe has been submitted for approval and should be visible within 24 hours.');
       } else if (imageUrl) {
@@ -402,7 +369,6 @@ const UploadRecipe = () => {
         setSuccess('Recipe uploaded successfully! Your recipe has been submitted for approval and should be visible within 24 hours.');
       }
       
-      // Reset form after successful submission
       setFormData({
         name: '',
         description: '',
@@ -425,7 +391,6 @@ const UploadRecipe = () => {
     }
   };
 
-  // Update the filtered ingredients to use the current search term
   const filteredIngredients = activeIngredientIndex !== null && searchTerms[activeIngredientIndex]
     ? ingredientsList.filter(ing => 
         ing.name.toLowerCase().includes(searchTerms[activeIngredientIndex].toLowerCase())

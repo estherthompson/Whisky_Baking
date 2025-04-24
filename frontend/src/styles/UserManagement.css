@@ -42,7 +42,6 @@
   color: #2c3e50;
 }
 
-/* Desktop View */
 .users-table {
   width: 100%;
   overflow-x: auto;
@@ -70,7 +69,6 @@ tr:hover {
   background-color: #f8f9fa;
 }
 
-/* User Info */
 .user-info {
   display: flex;
   flex-direction: column;
@@ -87,7 +85,6 @@ tr:hover {
   font-size: 0.9rem;
 }
 
-/* Status Badge */
 .status-badge {
   padding: 0.25rem 0.75rem;
   border-radius: 4px;
@@ -105,7 +102,6 @@ tr:hover {
   color: #e65100;
 }
 
-/* Action Buttons */
 .actions {
   display: flex;
   flex-direction: column;
@@ -145,7 +141,6 @@ tr:hover {
   background: #bb2d3b;
 }
 
-/* Mobile View */
 .users-list {
   display: none;
 }
@@ -178,7 +173,6 @@ tr:hover {
   margin-top: 1rem;
 }
 
-/* Media Queries */
 @media (max-width: 768px) {
   .desktop-view {
     display: none;
@@ -213,7 +207,6 @@ tr:hover {
   }
 }
 
-/* Stats Section */
 .stats-section {
   display: flex;
   gap: 10px;
@@ -247,7 +240,6 @@ tr:hover {
   color: #212529;
 }
 
-/* Desktop View */
 .users-table {
   width: 100%;
   border-collapse: collapse;
@@ -336,7 +328,6 @@ tr:hover {
   color: #856404;
 }
 
-/* Mobile View */
 .mobile-view {
   display: none;
 }
@@ -411,7 +402,6 @@ tr:hover {
   }
 }
 
-/* Users Dropdown Toggle */
 .users-dropdown-toggle {
   background: #f8f9fa;
   border-radius: 4px;
@@ -437,7 +427,6 @@ tr:hover {
   color: #495057;
 }
 
-/* Users Card Container */
 .users-card-container {
   display: flex;
   flex-direction: column;
@@ -516,7 +505,6 @@ tr:hover {
   width: 100%;
 }
 
-/* Remove desktop/mobile specific styles that are no longer needed */
 .desktop-view, .mobile-view {
   display: block;
 }
@@ -532,7 +520,6 @@ tr:hover {
   }
 }
 
-/* Recipe-specific styles */
 .recipe-author {
   font-size: 14px;
   color: #6c757d;
@@ -569,7 +556,6 @@ tr:hover {
   margin-top: 0;
 }
 
-/* Debug Section */
 .debug-section {
   margin-top: 2rem;
   padding: 1rem;
@@ -604,7 +590,6 @@ tr:hover {
   word-break: break-all;
 }
 
-/* Recipe Content Styling */
 .recipe-content {
   margin-bottom: 1.5rem;
   width: 100%;

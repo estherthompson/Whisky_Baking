@@ -71,7 +71,6 @@ const UserAccount = () => {
   
   useEffect(() => {
     return () => {
-      // Cleanup on unmount
     };
   }, []);
 
@@ -412,7 +411,6 @@ const UserAccount = () => {
       }
     } catch (error) {
       if (error.response && error.response.status === 404) {
-        // Profile not found, will create new one on save
       } else {
         console.error('Error fetching user profile:', error);
       }
@@ -527,7 +525,6 @@ const UserAccount = () => {
   };
 
   const removeSavedRecipe = async (recipeId, event) => {
-    // Prevent the click event from bubbling up to the parent card
     event.stopPropagation();
     
     if (!user) {
@@ -545,12 +542,10 @@ const UserAccount = () => {
     
     console.log(`Attempting to remove saved recipe ${recipeId} for user ${userId}`);
     
-    // Immediately update UI for better user experience
     const originalRecipes = [...savedRecipes];
     setSavedRecipes(savedRecipes.filter(recipe => recipe.recipeid !== recipeId));
     
     try {
-      // Use the POST method with _method=DELETE for compatibility with servers that don't support DELETE
       const response = await axios({
         method: 'POST',
         url: `http://localhost:5001/api/user/${userId}/saved-recipes/${recipeId}`,
@@ -562,15 +557,12 @@ const UserAccount = () => {
       
       console.log('Delete response:', response.data);
       
-      // Feedback was already provided by optimistically updating the UI
     } catch (error) {
       console.error('Error removing saved recipe:', error);
       console.error('Error details:', error.response?.data || error.message);
       
-      // Revert the UI change on error
       setSavedRecipes(originalRecipes);
       
-      // Show error message
       alert(`Failed to remove recipe: ${error.response?.data?.error || error.message}. Please try again.`);
     }
   };

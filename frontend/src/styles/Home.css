@@ -3,7 +3,7 @@
   background-color: #FCF5E5;
 }
 
-/* Hero Banner Styles */
+
 .hero-banner {
   background-size: cover;
   background-position: center;
@@ -26,7 +26,7 @@
   font-weight: 500;
 }
 
-/* Search Container Styles */
+
 .search-container {
   max-width: 900px;
   margin: 0 auto;
@@ -210,11 +210,11 @@
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s ease;
-  background-color: #FFE4E1; /* Light pink */
+  background-color: #FFE4E1; 
 }
 
 .available-ingredients-panel .ingredient-checkbox:hover {
-  background-color: #FFD1D1; /* Slightly darker pink */
+  background-color: #FFD1D1; 
   transform: translateY(-2px);
   box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
 }
@@ -226,10 +226,10 @@
 }
 
 .available-ingredients-panel .ingredient-checkbox input[type="checkbox"]:checked {
-  accent-color: #FFB6C1; /* Pastel pink */
+  accent-color: #FFB6C1; 
 }
 
-/* Random pastel colors for available ingredients */
+
 .available-ingredients-panel .ingredient-checkbox:nth-child(1) { background-color: #FFE4E1; }
 .available-ingredients-panel .ingredient-checkbox:nth-child(2) { background-color: #E6E6FA; }
 .available-ingredients-panel .ingredient-checkbox:nth-child(3) { background-color: #E0FFFF; }
@@ -261,7 +261,7 @@
 .available-ingredients-panel .ingredient-checkbox:nth-child(29) { background-color: #F0FFF0; }
 .available-ingredients-panel .ingredient-checkbox:nth-child(30) { background-color: #F5F5DC; }
 
-/* Filters Panel Styles */
+
 .filters-panel {
   position: absolute;
   top: 100%;
@@ -336,7 +336,7 @@
   text-overflow: ellipsis;
 }
 
-/* Random pastel colors for filter ingredients */
+
 .filters-panel .ingredient-checkbox:nth-child(1) { background-color: #E0FFFF; }
 .filters-panel .ingredient-checkbox:nth-child(2) { background-color: #F0FFF0; }
 .filters-panel .ingredient-checkbox:nth-child(3) { background-color: #FFF0F5; }
@@ -368,7 +368,7 @@
 .filters-panel .ingredient-checkbox:nth-child(29) { background-color: #F0F8FF; }
 .filters-panel .ingredient-checkbox:nth-child(30) { background-color: #FDF5E6; }
 
-/* Random pastel colors for dietary restrictions */
+
 .restriction-checkbox:nth-child(1) { background-color: #FFE4B5; }
 .restriction-checkbox:nth-child(2) { background-color: #FFDAB9; }
 .restriction-checkbox:nth-child(3) { background-color: #E6E6FA; }
@@ -385,7 +385,7 @@
 .restriction-checkbox:nth-child(14) { background-color: #F5F5DC; }
 .restriction-checkbox:nth-child(15) { background-color: #F0F8FF; }
 
-/* Specific ingredient colors */
+
 .ingredient-checkbox[data-ingredient="white chocolate"] {
   background-color: #FFF5E6;
 }
@@ -394,7 +394,7 @@
   background-color: #F5E6D3;
 }
 
-/* Content Section Styles */
+
 .content-section {
   padding: 32px 32px 32px;
   max-width: 1800px;
@@ -411,7 +411,7 @@
   font-weight: 700;
 }
 
-/* Recipe Grid Styles */
+
 .recipe-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -438,7 +438,7 @@
 .recipe-image {
   position: relative;
   width: 100%;
-  padding-top: 75%; /* 4:3 aspect ratio */
+  padding-top: 75%; 
   background-color: #f8f8f8;
   overflow: hidden;
 }
@@ -511,7 +511,7 @@
   white-space: normal;
 }
 
-/* Loading and No Results States */
+
 .loading, .no-results {
   text-align: center;
   padding: 40px;

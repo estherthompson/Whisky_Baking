@@ -32,10 +32,8 @@ const Home = () => {
   const availableIngredientsRef = useRef(null);
   const location = useLocation();
 
-  // Fetch all ingredients and dietary restrictions from the database
   const fetchIngredients = async () => {
     try {
-      // Fetch ingredients
       const { data: ingredientData, error: ingredientError } = await supabase
         .from('ingredient')
         .select('ingredientid, name, dietary_restriction_ingredient(dietary_restriction(name))')
@@ -43,7 +41,6 @@ const Home = () => {
 
       if (ingredientError) throw ingredientError;
 
-      // Initialize excludedIngredients state with all ingredients unchecked
       const initialExcludedState = ingredientData.reduce((acc, ingredient) => {
         acc[ingredient.name] = true;
         return acc;
@@ -52,7 +49,6 @@ const Home = () => {
       setIngredients(ingredientData);
       setExcludedIngredients(initialExcludedState);
 
-      // Fetch dietary restrictions
       const { data: restrictionData, error: restrictionError } = await supabase
         .from('dietary_restriction')
         .select('*')
@@ -60,7 +56,6 @@ const Home = () => {
 
       if (restrictionError) throw restrictionError;
 
-      // Initialize selectedRestrictions state with all restrictions unchecked
       const initialRestrictionsState = restrictionData.reduce((acc, restriction) => {
         acc[restriction.name] = false;
         return acc;
@@ -90,14 +85,12 @@ const Home = () => {
       [restrictionName]: !prev[restrictionName]
     }));
 
-    // Get ingredients associated with this restriction
     const restrictedIngredients = ingredients.filter(ingredient => 
       ingredient.dietary_restriction_ingredient?.some(dri => 
         dri.dietary_restriction.name === restrictionName
       )
     ).map(ingredient => ingredient.name);
 
-    // Update excluded ingredients based on the restriction
     setExcludedIngredients(prev => {
       const newState = { ...prev };
       restrictedIngredients.forEach(ingredient => {
@@ -154,14 +147,13 @@ const Home = () => {
         throw error;
       }
 
-      console.log("Raw recipe data:", data); // Debug log
+      console.log("Raw recipe data:", data); 
 
-      // Filter out recipes that contain excluded ingredients
+   
       const uncheckedIngredients = Object.entries(excludedIngredients)
         .filter(([_, isChecked]) => !isChecked)
         .map(([ingredient]) => ingredient.toLowerCase());
 
-      // If no ingredients are unchecked, show all recipes
       let filteredRecipes = uncheckedIngredients.length === 0
         ? data
         : data.filter(recipe => {
@@ -176,7 +168,6 @@ const Home = () => {
             );
           });
 
-      // Filter recipes based on selected available ingredients
       const selectedIngredients = Object.entries(availableIngredients)
         .filter(([_, isSelected]) => isSelected)
         .map(([name]) => name.toLowerCase());
@@ -187,25 +178,21 @@ const Home = () => {
               ri.ingredient.name.toLowerCase()
             ) || [];
         
-            // true only if every recipe ingredient is in selectedIngredients
             return recipeIngredients.every(ingredient =>
               selectedIngredients.includes(ingredient)
             );
           });
         }
 
-      // Format the recipes with their ingredients and average rating
       const formattedRecipes = filteredRecipes.map(recipe => {
-        // Calculate average rating
         let averageRating = 0;
         if (recipe.rating && recipe.rating.length > 0) {
           const totalRating = recipe.rating.reduce((sum, r) => sum + r.score, 0);
           averageRating = totalRating / recipe.rating.length;
         }
 
-        // Get the username from user_account
         const username = recipe.user_account?.name || recipe.user_account?.username || 'Unknown';
-        console.log("Recipe:", recipe.name, "Username:", username); // Debug log
+        console.log("Recipe:", recipe.name, "Username:", username); 
 
         return {
           ...recipe,
@@ -218,7 +205,7 @@ const Home = () => {
         };
       });
 
-      console.log("Formatted recipes:", formattedRecipes); // Debug log
+      console.log("Formatted recipes:", formattedRecipes); 
       const sortedRecipes = formattedRecipes.sort((a, b) => b.averageRating - a.averageRating);
       setRecipes(sortedRecipes);
     } catch (error) {
@@ -237,15 +224,13 @@ const Home = () => {
   const handleRecipeClick = async (recipe) => {
     console.log('Recipe clicked:', recipe);
     
-    // First set the basic recipe data to show the modal immediately
     setSelectedRecipe({
       ...recipe,
       username: recipe.user_account?.username || 'Unknown',
-      ingredients: [] // Will be populated after fetch
+      ingredients: [] 
     });
     
     try {
-      // Then fetch the complete details
       const { data, error } = await supabase
         .from('recipe')
         .select(`
@@ -284,14 +269,12 @@ const Home = () => {
         return;
       }
 
-      // Calculate average rating
       let averageRating = 0;
       if (data.rating && data.rating.length > 0) {
         const totalRating = data.rating.reduce((sum, r) => sum + r.score, 0);
         averageRating = totalRating / data.rating.length;
       }
 
-      // Update the recipe with full details
       const formattedRecipe = {
         ...data,
         username: data.user_account?.name || data.user_account?.username || 'Unknown',
@@ -310,7 +293,6 @@ const Home = () => {
     }
   };
 
-  // Effect to handle opening recipe modal from navigation state
   useEffect(() => {
     if (location.state?.openRecipeId) {
       const recipeId = location.state.openRecipeId;
@@ -323,7 +305,6 @@ const Home = () => {
   }, [location.state, recipes]);
 
   useEffect(() => {
-    // Fetch all ingredients from the database
     const fetchAllIngredients = async () => {
       try {
         const { data, error } = await supabase
@@ -333,7 +314,6 @@ const Home = () => {
 
         if (error) throw error;
 
-        // Initialize availableIngredients state with all ingredients unchecked
         const initialAvailableState = data.reduce((acc, ingredient) => {
           acc[ingredient.name] = false;
           return acc;
@@ -362,7 +342,7 @@ const Home = () => {
       return acc;
     }, {});
     setAvailableIngredients(clearedState);
-    setIngredientSearchQuery(''); // Clear the search input
+    setIngredientSearchQuery(''); 
     fetchRecipes();
   };
 

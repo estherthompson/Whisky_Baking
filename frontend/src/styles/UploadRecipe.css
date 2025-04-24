@@ -141,7 +141,6 @@
   top: auto;
 }
 
-/* Show validation message on hover */
 .input-warning:hover ~ .validation-message,
 .input-warning:focus ~ .validation-message,
 .amount-inputs:hover .input-warning ~ .validation-message {

@@ -33,11 +33,11 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
 
   useEffect(() => {
     document.addEventListener('keydown', handleEscapeKey);
-    document.body.style.overflow = 'hidden'; // Prevent body scrolling when modal is open
+    document.body.style.overflow = 'hidden'; 
     
     return () => {
       document.removeEventListener('keydown', handleEscapeKey);
-      document.body.style.overflow = 'auto'; // Restore body scrolling when modal is closed
+      document.body.style.overflow = 'auto'; 
     };
   }, [handleEscapeKey]);
 
@@ -48,11 +48,9 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
   };
 
   const handleSaveClick = async () => {
-    // Add visual feedback that the button was clicked
     setIsSaving(true);
     
     try {
-      // Get user from localStorage and check authentication more thoroughly
       const userString = localStorage.getItem('user');
       console.log('Raw user string:', userString);
       
@@ -71,7 +69,6 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
       console.log('Parsed user data:', user);
       console.log('User object keys:', Object.keys(user));
       
-      // Check for empty user object
       if (!user || Object.keys(user).length === 0) {
         console.error('Empty user object');
         setSaveMessage({
@@ -83,8 +80,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         return;
       }
       
-      // Check all possible ID properties
-      // Try each possible property name for user ID
+
       const possibleIdProps = ['UserID', 'userid', 'userId', 'user_id', 'id', 'ID'];
       let userId = null;
       
@@ -96,7 +92,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         }
       }
       
-      // If we still don't have a userId, look for any property with "id" in the name
+  
       if (!userId) {
         const idProps = Object.keys(user).filter(key => 
           key.toLowerCase().includes('id') && user[key]
@@ -119,27 +115,24 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         return;
       }
       
-      // Prepare the data for saving to saved_recipes table
+  
       const savedRecipeData = {
         userid: userId,
         recipeId: recipe.recipeid,
-        dateSaved: new Date().toISOString() // Current timestamp in ISO format
+        dateSaved: new Date().toISOString() 
       };
       
       console.log('Saving recipe with data:', savedRecipeData);
       
-      // Save the recipe using the API
       const response = await axios.post('http://localhost:5001/api/recipes/save', savedRecipeData);
       
       console.log('Save recipe API response:', response.data);
       
-      // Show success message
       setSaveMessage({
         type: 'success',
         text: 'Recipe saved! You can find it in your account under Saved Recipes.'
       });
       
-      // Dispatch an event to notify that a recipe was saved (for refreshing the Saved Recipes tab)
       window.dispatchEvent(new CustomEvent('recipeSaved', {
         detail: {
           recipeId: recipe.recipeid,
@@ -147,13 +140,11 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         }
       }));
       
-      // Clear message after 5 seconds
       setTimeout(() => setSaveMessage(null), 5000);
       
     } catch (error) {
       console.error('Error details:', error);
       
-      // Check for duplicate save error
       if (error.response && error.response.status === 400 && 
           error.response.data && error.response.data.error === 'Recipe is already saved by this user') {
         setSaveMessage({
@@ -161,17 +152,14 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
           text: 'This recipe is already saved in your account.'
         });
       } else {
-        // Show general error message
         setSaveMessage({
           type: 'error',
           text: 'Failed to save recipe. Please try again later.'
         });
       }
       
-      // Clear message after 5 seconds
       setTimeout(() => setSaveMessage(null), 5000);
     } finally {
-      // Reset saving state after a short delay for visual feedback
       setTimeout(() => setIsSaving(false), 500);
     }
   };
@@ -207,7 +195,6 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
   const handleSubmitReview = async (e) => {
     e.preventDefault();
     
-    // Get user from localStorage first to check authentication
     const userString = localStorage.getItem('user');
     
     if (!userString) {
@@ -240,7 +227,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
     try {
       const user = JSON.parse(userString);
       
-      // Check for user ID using the same approach as in handleSaveClick
+    
       const possibleIdProps = ['UserID', 'userid', 'userId', 'user_id', 'id', 'ID'];
       let userId = null;
       
@@ -270,7 +257,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         return;
       }
       
-      // Prepare the review data
+    
       const reviewData = {
         userId: userId,
         recipeId: recipe.recipeid,
@@ -281,11 +268,11 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
       
       console.log('Submitting review:', reviewData);
       
-      // Submit the review
+     
       const response = await axios.post('http://localhost:5001/api/recipes/rating', reviewData);
       console.log('Review submission response:', response.data);
       
-      // Update the recipe's ratings array with the new review
+      
       if (recipe.ratings) {
         recipe.ratings.push({
           ...reviewData,
@@ -293,7 +280,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
           ratingid: response.data.ratingid
         });
         
-        // Recalculate average rating
+      
         const totalRating = recipe.ratings.reduce((sum, r) => sum + r.score, 0);
         recipe.averageRating = totalRating / recipe.ratings.length;
       }
@@ -303,15 +290,15 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         text: 'Your review has been submitted!'
       });
       
-      // Clear form and draft
+     
       setRating(0);
       setReviewText('');
       setShowReviewForm(false);
       
-      // Clear both localStorage items
+
       localStorage.removeItem('draftReview');
       
-      // Clear message after 5 seconds
+   
       setTimeout(() => setReviewMessage(null), 5000);
       
     } catch (error) {
@@ -326,9 +313,9 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
     }
   };
 
-  // Update the debug useEffect
+  
   useEffect(() => {
-    // Debug authentication state when component mounts
+   
     try {
       const user = localStorage.getItem('user');
       console.log('localStorage user string:', user);
@@ -338,7 +325,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         console.log('Parsed user object:', parsedUser);
         console.log('Available keys in user object:', Object.keys(parsedUser));
         
-        // Check all possible ID properties and their types
+       
         console.log('User ID check:', {
           UserID: parsedUser.UserID,
           userid: parsedUser.userid,
@@ -361,9 +348,7 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
     }
   }, []);
 
-  // Effect to handle initialization and draft review data
   useEffect(() => {
-    // Check for draft review in localStorage
     const draftReviewString = localStorage.getItem('draftReview');
     if (draftReviewString) {
       const savedDraft = JSON.parse(draftReviewString);
@@ -372,16 +357,13 @@ const RecipeModal = ({ recipe, onClose, initialShowReviewForm = false, draftRevi
         setRating(savedDraft.rating || 0);
         setReviewText(savedDraft.reviewText || '');
         setShowReviewForm(true);
-        // Don't remove the draft yet - wait until successful submission
       }
     } else if (draftReview) {
-      // If draft review was passed as prop (from navigation state)
       console.log('Setting review from navigation state:', draftReview);
       setRating(draftReview.rating || 0);
       setReviewText(draftReview.reviewText || '');
       setShowReviewForm(true);
     } else {
-      // No draft review, use initial state
       setShowReviewForm(initialShowReviewForm);
       setRating(0);
       setReviewText('');

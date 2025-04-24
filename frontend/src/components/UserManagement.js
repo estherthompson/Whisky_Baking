@@ -13,32 +13,27 @@ const UserManagement = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(false);
   
-  // Fetch stats from API
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        // Fetch total users
         const usersResponse = await axios.get('http://localhost:5001/api/admin/total-users');
         console.log('Total users response:', usersResponse.data);
         if (usersResponse.data && usersResponse.data.totalUsers) {
           setUserCount(usersResponse.data.totalUsers);
         }
         
-        // Fetch total admins
         const adminsResponse = await axios.get('http://localhost:5001/api/admin/total-admins');
         console.log('Total admins response:', adminsResponse.data);
         if (adminsResponse.data && adminsResponse.data.totalAdmins) {
           setAdminCount(adminsResponse.data.totalAdmins);
         }
 
-        // Fetch total recipes
         const recipesResponse = await axios.get('http://localhost:5001/api/admin/total-recipes');
         console.log('Total recipes response:', recipesResponse.data);
         if (recipesResponse.data && recipesResponse.data.totalRecipes) {
           setRecipeCount(recipesResponse.data.totalRecipes);
         }
         
-        // Fetch pending recipes
         fetchPendingRecipes();
       } catch (error) {
         console.error('Error fetching stats:', error);
@@ -48,7 +43,6 @@ const UserManagement = () => {
     fetchStats();
   }, []);
   
-  // Fetch pending recipes
   const fetchPendingRecipes = async () => {
     setLoading(true);
     try {
@@ -71,7 +65,6 @@ const UserManagement = () => {
       const response = await axios.put(`http://localhost:5001/api/admin/recipes/${recipeId}/approve`);
       console.log('Recipe approved:', response.data);
       
-      // Refresh the pending recipes
       fetchPendingRecipes();
     } catch (error) {
       console.error('Error approving recipe:', error);
@@ -84,7 +77,6 @@ const UserManagement = () => {
         const response = await axios.delete(`http://localhost:5001/api/admin/recipes/${recipeId}`);
         console.log('Recipe rejected:', response.data);
         
-        // Refresh the pending recipes
         fetchPendingRecipes();
       }
     } catch (error) {

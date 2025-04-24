@@ -311,7 +311,6 @@
   }
 }
 
-/* Specific fix for very small screens */
 @media (max-width: 474px) {
   
   .mobile-menu-btn {

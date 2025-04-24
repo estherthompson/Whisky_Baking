@@ -6,7 +6,7 @@
 
 .main-content {
   flex: 1;
-  margin-top: calc(56px + 15px); /* Navbar height (56px) + scallop height (15px) */
+  margin-top: calc(56px + 15px); 
   padding: 20px;
   overflow-y: auto;
   max-width: 1800px;
@@ -16,7 +16,6 @@
   background-color: transparent;
 }
 
-/* Remove margin for home page */
 .home-page .main-content {
   margin-top: 0;
   padding: 0;
@@ -40,7 +39,6 @@
     padding: 15px;
   }
 
-  /* Remove margin and padding for home page */
   .home-page .main-content {
     margin-top: 0;
     padding: 0;

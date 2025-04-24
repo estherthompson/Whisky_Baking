@@ -175,7 +175,6 @@
   text-align: center;
 }
 
-/* Responsive Design */
 @media (max-width: 1200px) {
   .user-account-container {
     padding: 15px;
@@ -256,7 +255,6 @@
   }
 }
 
-/* Admin Dashboard Styles */
 .admin-dashboard {
   padding: 2rem;
 }
@@ -310,14 +308,12 @@
   background-color: #34495e;
 }
 
-/* Coming Soon Styles */
 .coming-soon {
   text-align: center;
   padding: 2rem;
   color: #666;
 }
 
-/* Settings Styles */
 .logout-btn {
   background-color: #3538dc;
   color: white;
@@ -492,7 +488,6 @@
   background-color: #c82333;
 }
 
-/* Profile Image Styles */
 .profile-image-container {
   display: flex;
   justify-content: center;
@@ -509,7 +504,6 @@
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Additional Settings Styles */
 .settings-section {
   margin-bottom: 30px;
   padding-bottom: 20px;
@@ -526,7 +520,6 @@
   border-bottom: none;
 }
 
-/* Checkbox Groups */
 .checkbox-group {
   margin-bottom: 15px;
   padding: 10px;
@@ -553,7 +546,6 @@
   height: 16px;
 }
 
-/* Account Actions */
 .account-actions {
   display: flex;
   flex-direction: column;
@@ -587,7 +579,6 @@
   background-color: #d32f2f;
 }
 
-/* My Recipes Tab Styles */
 .my-recipes {
   width: 100%;
 }
@@ -672,7 +663,7 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
   margin: 0;
-  max-height: 3em; /* Fallback for browsers that don't support line-clamp */
+  max-height: 3em; 
 }
 
 .loading {
@@ -707,7 +698,6 @@
   background-color: #45a049;
 }
 
-/* Responsive adjustments for recipe grid */
 @media (max-width: 768px) {
   .recipe-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -720,7 +710,6 @@
   }
 }
 
-/* Activity Tab Styles */
 .activity {
   width: 100%;
 }
@@ -782,7 +771,7 @@
 
 .activity-content {
   flex: 1;
-  min-width: 0; /* For text truncation to work properly */
+  min-width: 0; 
 }
 
 .activity-header {
@@ -840,7 +829,6 @@
   color: #757575;
 }
 
-/* Responsive adjustments for activity tab */
 @media (max-width: 576px) {
   .activity-item {
     flex-direction: column;
@@ -861,7 +849,6 @@
   }
 }
 
-/* Saved Recipes Styling */
 .saved-recipes {
   width: 100%;
 }
@@ -949,7 +936,6 @@
   color: #666;
 }
 
-/* Responsive styles for saved recipes */
 @media (max-width: 768px) {
   .recipes-grid {
     grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
@@ -962,7 +948,6 @@
   }
 }
 
-/* Profile form styles */
 .error-message {
   color: #d32f2f;
   background-color: #ffebee;
@@ -996,7 +981,6 @@ button:disabled:hover {
   color: #888;
 }
 
-/* Star rating styles */
 .star-rating {
   display: inline-flex;
   align-items: center;

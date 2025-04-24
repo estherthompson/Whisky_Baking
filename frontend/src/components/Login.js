@@ -20,17 +20,14 @@ const Login = () => {
   const [pendingReview, setPendingReview] = useState(null);
 
   useEffect(() => {
-    // Check if there's a pending review
     const pendingReviewData = sessionStorage.getItem('pendingReview');
     if (pendingReviewData) {
       setPendingReview(JSON.parse(pendingReviewData));
       console.log('Found pending review:', JSON.parse(pendingReviewData));
     }
     
-    // Check if user is already logged in
     const user = localStorage.getItem('user');
     if (user) {
-      // Handle the redirection based on pending review
       handlePostLoginRedirect(pendingReviewData);
     }
   }, [navigate]);
@@ -40,13 +37,10 @@ const Login = () => {
       const reviewData = JSON.parse(pendingReviewData);
       console.log('Processing redirect for review of recipe:', reviewData.recipeId);
       
-      // Clear the pending review from session storage
       sessionStorage.removeItem('pendingReview');
       
-      // Redirect to home page first (where the recipes are)
       navigate('/');
       
-      // Use a timeout to ensure navigation completes before trying to open the modal
       setTimeout(() => {
         console.log('Dispatching openRecipeModal event');
         window.dispatchEvent(new CustomEvent('openRecipeModal', {
@@ -59,7 +53,7 @@ const Login = () => {
             }
           }
         }));
-      }, 500); // Increased timeout to ensure navigation completes
+      }, 500); 
     } else {
       navigate('/user-account');
     }
@@ -85,15 +79,12 @@ const Login = () => {
           password: formData.password
         });
         
-        // Store user data in localStorage
         localStorage.setItem('user', JSON.stringify(response.data));
         console.log('Login successful, user stored in localStorage');
         
-        // Check for draft review
         const draftReviewString = localStorage.getItem('draftReview');
         if (draftReviewString) {
           const draftReview = JSON.parse(draftReviewString);
-          // Navigate to home page with state to open the recipe modal
           navigate('/', { 
             state: { 
               openRecipeId: draftReview.recipeId,
@@ -106,7 +97,6 @@ const Login = () => {
           return;
         }
         
-        // If no draft review, go to default page
         navigate('/user-account');
       } else {
         const signupData = {
